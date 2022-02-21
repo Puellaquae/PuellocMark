@@ -1,0 +1,30 @@
+{
+  "name": "jsptm",
+  "version": "0.0.0",
+  "description": "JS/TS implement for PuellocMark",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "jest",
+    "test-c": "jest --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Puellaquae/PuellocMark.git"
+  },
+  "author": "Puellaquae",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^27.4.0",
+    "jest": "^27.5.1",
+    "ts-jest": "^27.1.3",
+    "typescript": "^4.5.5"
+  },
+  "bugs": {
+    "url": "https://github.com/Puellaquae/PuellocMark/issues"
+  },
+  "homepage": "https://github.com/Puellaquae/PuellocMark",
+  "dependencies": {
+    "@ltd/j-toml": "^1.29.0"
+  }
+}
