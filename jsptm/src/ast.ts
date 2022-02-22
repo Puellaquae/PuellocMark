@@ -1,49 +1,60 @@
-interface LowAst {
-    metadata: object,
-    globalMacros: Macro[],
-    rootBlock: RootBlock[]
-}
+import { MacroCall } from "./marco";
 
-interface RootBlock {
-    rootBlockMarcos: Macro[],
+type LowAst = {
+    metadata: object,
+    globalMacros: MacroCall[],
+    title: string,
+    rootBlocks: RootBlock[]
+};
+
+type RootBlock = {
+    rootBlockMarcos: MacroCall[],
     rawData: string
-}
+};
 
-interface HighAst {
+type HighAst = {
     metadata: object,
-    globalMacros: Macro[],
+    globalMacros: MacroCall[],
+    title: string,
     nodes: Node[]
-}
+};
 
-enum NodeType {
+type NodeDatum = {
     // Rootable Block
-    Break = "break",
-    Title = "title",
-    Html = "html",
-    FenceCode = "fence_code",
-    Table = "table",
-    Para = "para",
-    // Inline Blocks
-    InlineCode = "inline_code",
-    Escape = "escape",
-    Entity = "entity",
-    Emphasis = "emphasis",
-    Delete = "delete",
-    Link = "link",
-    Image = "image",
-    AutoLink = "autolink",
-    Emoji = "emoji",
-    Text = "text",
-    // Container Blocks
-    Quote = "quote",
-    List = "list"
-}
+    break: null,
+    title: { level: 1 | 2 | 3 | 4 | 5 | 6, text: string },
+    html: { html: string },
+    fenceCode: { code: string },
+    table: { align: ("left" | "center" | "right")[] },
+    para: null,
+    // Inline Block
+    inlineCode: { code: string },
+    escape: { text: string },
+    entity: { text: string },
+    emphasis: { isStrong: boolean, text: string },
+    delete: { text: string },
+    link: { name: string, title: string, url: string },
+    image: { alt: string, title: string, url: string },
+    autolink: { url: string },
+    emoji: { text: string },
+    text: { text: string },
+    // Container Block
+    quote: null,
+    list: null,
+    // Internal Block used for table
+    tableHeader: null,
+    tableRow: null
+};
 
-interface Node {
-    type: NodeType,
-    localMacros: Macro[],
+type NodeType = keyof NodeDatum;
+
+// https://stackoverflow.com/questions/51691235/typescript-map-union-type-to-another-union-type
+type Distribute<U> = U extends NodeType ? { type: U, data: NodeDatum[U] } : never;
+
+type Node = {
+    localMacros: MacroCall[],
     children: Node[],
     rawData: string
-}
+} & Distribute<NodeType>;
 
-export { LowAst, HighAst, Node }
+export { LowAst, HighAst, Node, NodeType }

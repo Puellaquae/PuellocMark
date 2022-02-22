@@ -1,6 +1,6 @@
 import { Lines } from "../src/ptm";
 
-describe("Line spilter", () => {
+describe("Lines", () => {
     it("simple CRLF", () => {
         let l = new Lines("line\r\n   leading\r\nending   \r\nempty line\r\n\r\nnoend")
         expect(l.nextLine()).toEqual("line");
@@ -44,4 +44,31 @@ describe("Line spilter", () => {
         expect(l2.nextLine()).toEqual(null);
         expect(l2.nextLine()).toEqual(null);
     });
-})
+
+    it("peek", () => {
+        let l1 = new Lines("aa\nbb");
+        expect(l1.peekNextLine()).toEqual("aa");
+        expect(l1.peekNextLine()).toEqual("aa");
+        expect(l1.nextLine()).toEqual("aa");
+        expect(l1.peekNextLine()).toEqual("bb");
+        expect(l1.peekNextLine()).toEqual("bb");
+        expect(l1.nextLine()).toEqual("bb");
+        expect(l1.peekNextLine()).toEqual(null);
+        expect(l1.peekNextLine()).toEqual(null);
+        expect(l1.nextLine()).toEqual(null);
+    })
+
+    it("test", () => {
+        let l1 = new Lines("aa\nbb");
+        expect(l1.testAndSkipNextLine("bb")).toEqual(false);
+        expect(l1.peekNextLine()).toEqual("aa");
+        expect(l1.testAndSkipNextLine(/bb/)).toEqual(false);
+        expect(l1.peekNextLine()).toEqual("aa");
+        expect(l1.testAndSkipNextLine("aa")).toEqual(true);
+        expect(l1.peekNextLine()).toEqual("bb");
+        expect(l1.testAndSkipNextLine(/bb/)).toEqual(true);
+        expect(l1.peekNextLine()).toEqual(null);
+        expect(l1.nextLine()).toEqual(null);
+        expect(l1.testAndSkipNextLine(/bb/)).toEqual(false);
+    })
+});
