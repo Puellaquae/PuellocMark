@@ -46,6 +46,12 @@ function ptm2lowAst(src: string): LowAst {
     // getGlobalMacro
     // getTitle
     // splitRootBlock
+    return {
+        metadata,
+        globalMacros: [],
+        title: "",
+        rootBlocks: []
+    }
 }
 
 export { Lines, ptm2lowAst };

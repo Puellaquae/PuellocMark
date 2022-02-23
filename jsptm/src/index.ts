@@ -19,7 +19,7 @@ function ptm2highAst(src: string, macros: { [key: string]: Macro }): HighAst {
         nodes: lowAst.rootBlocks.map(b => {
             let node = parseRootBlock(b.rawData);
             node.localMacros.push(...b.rootBlockMarcos);
-            return applyAstMacroRecursive(node, macros);
+            return applyAstMacroRecursive(node, lowAst.globalMacros, macros);
         })
     }
 
