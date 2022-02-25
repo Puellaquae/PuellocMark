@@ -1,11 +1,11 @@
-import { HighAst } from "./ast";
+import { Ast } from "./ast";
 
-function highAst2html(ast: HighAst): string {
+function ast2html(ast: Ast): string {
     return "";
 }
 
-function highAst2gfm(ast: HighAst): string {
+function ast2gfm(ast: Ast): string {
     return "";
 }
 
-export { highAst2gfm, highAst2html };
+export { ast2gfm, ast2html };

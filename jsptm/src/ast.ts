@@ -1,21 +1,8 @@
 import { MacroCall } from "./marco";
 
-type LowAst = {
+type Ast = {
     metadata: object,
-    globalMacros: MacroCall[],
-    title: string,
-    rootBlocks: RootBlock[]
-};
-
-type RootBlock = {
-    rootBlockMarcos: MacroCall[],
-    rawData: string
-};
-
-type HighAst = {
-    metadata: object,
-    globalMacros: MacroCall[],
-    title: string,
+    globalMacroCalls: MacroCall[],
     nodes: Node[]
 };
 
@@ -31,11 +18,12 @@ type NodeDatum = {
     inlineCode: { code: string },
     escape: { text: string },
     entity: { text: string },
-    emphasis: { isStrong: boolean, text: string },
-    delete: { text: string },
+    emphasis: { text: string },
+    strong: { text: string },
+    del: { text: string },
     link: { name: string, title: string, url: string },
     image: { alt: string, title: string, url: string },
-    autolink: { url: string },
+    htmlTag: { tag: Text, alt: string[] }
     emoji: { text: string },
     text: { text: string },
     // Container Block
@@ -52,9 +40,9 @@ type NodeType = keyof NodeDatum;
 type Distribute<U> = U extends NodeType ? { type: U, data: NodeDatum[U] } : never;
 
 type Node = {
-    localMacros: MacroCall[],
+    macros: MacroCall[],
     children: Node[],
     rawData: string
 } & Distribute<NodeType>;
 
-export { LowAst, HighAst, Node, NodeType }
+export { Ast, Node, NodeType }
