@@ -54,12 +54,6 @@ ASCII 标点符号是 `!`，`"`，`#`，`$`，`%`，`&`，`'`，`(`，`)`，`*`�
 
 行首不允许有空白。
 
-### HTML
-
-以任何 HTML 中合法的标签开始，到空行（此空行不包括在块中）视为结束，块中内容将按原始内容直接输出。
-
-行首不允许有空白。
-
 ### 围栏代码块 FenceCode
 
 围栏由 3 个或以上的 `` ` ``组成，结束围栏和开始围栏的长度必须一致，开始围栏后可紧跟一段纯文字描述信息。
@@ -76,9 +70,17 @@ ASCII 标点符号是 `!`，`"`，`#`，`$`，`%`，`&`，`'`，`(`，`)`，`*`�
 
 分隔符行由单元格组成，这些单元格的唯一内容是连字符（`-`），可选的前置或后置冒号（`:`）或两者兼有，分别表示左，右或中心对齐。
 
+### 图片 Image
+
+在链接前加上 `!` 即表示图片，其中链接文本作为 `alt` 属性。
+
 ### 段落 Para
 
 无法被解析为其他块的内容按照段落解析。
+
+### 引用 Quote
+
+`> ` 和内联块。
 
 ## 内联块 InlineBlock
 
@@ -89,12 +91,6 @@ ASCII 标点符号是 `!`，`"`，`#`，`$`，`%`，`&`，`'`，`(`，`)`，`*`�
 ### 反斜杠转义 Escape
 
 任何 ASCII 标点字符都可以被反斜杠转义。
-
-### 实体和数字字符引用 Entity
-
-可以使用有效的 HTML 实体引用和数字字符引用来代替相应字面上的 Unicode 字符。
-
-实体引用包含 `&` + 任何有效的HTML5实体名 + `;`。参见文档 [https://html.spec.whatwg.org/multipage/entities.json](https://html.spec.whatwg.org/multipage/entities.json)。
 
 ### 强调 Emphasis & Strong
 
@@ -120,14 +116,6 @@ ASCII 标点符号是 `!`，`"`，`#`，`$`，`%`，`&`，`'`，`(`，`)`，`*`�
 
 格式为 `[` + 链接文本 + `]` + `(` + 链接地址 + 标题（可选） + `)`。如果链接地址中包含空格，使用 `<...>` 包裹链接地址。标题需使用 `'` 或 `"` 包裹。
 
-### 图片 Image
-
-在链接前加上 `!` 即表示图片，其中链接文本作为 `alt` 属性。
-
-### HTML 标签 HTMLTag
-
-任何 HTML 中合法的标签，标签内容将直接输出。
-
 ### Emoji
 
 `:` + 描述 + `:` 的会被转换为相应的 emoji。
@@ -140,17 +128,11 @@ ASCII 标点符号是 `!`，`"`，`#`，`$`，`%`，`&`，`'`，`(`，`)`，`*`�
 
 ## 容器块 ContainerBlock
 
-### 引用 Quote
-
-在行首加上 `>` 和一个空格，并将此行行首从第三个字符算起。从第一个 `>` 开始直到没有连续的（中间无空行）同层级的 `>` 为止。
-
-引用可包含多个其他容器块或独立块。
-
 ### 列表 List
 
 在行首加上 `-`，`+` 或 `*` 和一个空格，并将此项内所有行的行首从第 3 个字符算起。从第一个 `-`，`+` 或 `*` 开始直到没有连续的（中间无空行）同层级的 `-`，`+` 或 `*`（同一列表需使用同一符号）为止。
 
-每项可包含一个不跨行独立块或包含一个不跨行独立块和列表。
+每项可包含一个内联块或包含一个内联块和列表。
 
 ## 元数据 MetaData
 
@@ -160,35 +142,39 @@ ASCII 标点符号是 `!`，`"`，`#`，`$`，`%`，`&`，`'`，`(`，`)`，`*`�
 
 ## 宏 Macro
 
-宏作用于 AST，生成新的 AST。宏可以指定处理的 AST 节点的类型，若应用于指定的以外的类型的节点，宏将不生效。
+宏作用于 AST 节点，生成新的 AST 节点。宏可以指定处理的 AST 节点的类型，若应用于指定的以外的类型的节点，宏将不生效。
 
 宏的申明定义方式交由解析器决定。
 
-宏使用格式为 `<!--`（`<` + `!` + 两个 `-`）+ 宏名称 + 宏参数（可选） + `-->`（两个 `-` + `>`）。宏名称区分大小写。宏参数使用括号 `(...)` 包裹。对于同时使用多个宏，用逗号 `,` 分割。
+宏使用格式为 `<!M` + 宏名称 + 宏参数（可选） + `>`。宏名称区分大小写。宏参数使用括号 `(...)` 包裹。对于同时使用多个宏，用逗号 `,` 分割。
 
 宏位于第一个顶层块前且有空行分割时，为全局使用。全局使用的效果等同于对每一个顶层块局部应用）。宏位于其他任意块前时，仅应用于紧跟那一块。如果宏要应用于顶层块，则需位于块前一行，且行首不能为空白。
 
 全局使用的宏视为特殊的顶层块，一个文档只能有一个宏的全局使用块。
 
-以下是可接受的宏使用方式：
+以下是一些可接受的宏使用方式：
 
 ```
-一些内容<!-- 宏 -->要应用的块又一些内容
+一些内容<!M 宏 >要应用的块又一些内容
 
-一些内容<!-- 宏 --><!-- 另些宏 -->要应用的块又一些内容
+一些内容<!M 宏 ><!M 另些宏 >要应用的块又一些内容
 
-<!-- 宏 -->
+<!M 宏 >
 要应用的顶层块
 
-<!-- 宏 --><!-- 另些宏 -->
+<!M 宏 ><!M 另些宏 >
 要应用的顶层块
 
-<!-- 宏 -->
-<!-- 另些宏 -->
+<!M 宏 >
+<!M 另些宏 >
 要应用的顶层块
 ```
 
 全局宏先于局部宏执行，层级深的语法宏先于层级浅的，同一层级位置前的先于位置后的。宏可以知道其他应用于此块及内部子块的宏的存在。
+
+## 原始 HTML 内容
+
+原始 HTML 内容只能有解析器生成，不能直接书写在文档中。
 
 ## EBNF
 
@@ -203,50 +189,46 @@ Metadata = "<!---" Warp [ TOML Warp ] "--->" Warp
 
 RootMacro = { Macro { Macro } Warp }
 
-Macro = "<!--" { MacroCall "," } [ MacroCall ] "-->" 
+Macro = "<M " { MacroCall "," } [ MacroCall ] ">" 
 
 MacroCall = MacroName [ "(" { MacroArg "," } [ MacroArg ] ")" ]
 
-RootBlock = ( ContainerBlock | RootableBlock ) Warp
+RootBlock = ContainerBlock | ( RootableBlock Warp )
 
 ContainerBlock = Quote | List
 
-Quote = "> " ( ContainerBlock | RootableBlock )
+InlineBlocks = InlineBlock { InlineBlock }
 
-List = ( "- " | "+ " | "* " ) ( NoWarpBlock | List | ( NoWarpBlock List ) )
+Quote = "> " InlineBlocks Warp
 
-NoWarpBlock = Break | Title | Para
+List = { ( "- " | "+ " | "* " ) InlineBlocks [ RootMacro ( ContainerBlock | RootableBlock ) ] Warp }
 
-RootableBlock = Break | Title | Para | FenceCode | HTML | Table
+RootableBlock = Break | Title | Para | FenceCode | Table
 
 Break = "----" { "-" }
 
-Title = "# " | "## " | "### " | "#### " | "##### " | "###### " InlineBlock { InlineBlock }
+Title = "# " | "## " | "### " | "#### " | "##### " | "###### " InlineBlocks
 
-Para = InlineBlock { InlineBlock }
+Para = InlineBlocks
 
 FenceCode = ( "`" FenceCode "`" ) | "``" CodeType Warp Code Warp "``"
 
-HTML = HTMLTag RawHTMLWithoutEmptyLine
+Table = "|" { Header "|" } Warp "|" { ( "-" | ":-" | "-:" | ":-:" ) "|" } { Warp "|" { InlineBlocks "|" } }
 
-Table = "|" { Header "|" } Warp "|" { ( "-" | ":-" | "-:" | ":-:" ) "|" } { Warp "|" { InlineBlock "|" } }
-
-InlineBlock = InlineCode | Escape | Entity | Emphasis | Strong | Emoji | Link | Image | Text | Del | HTMLTag
+InlineBlock = InlineCode | Emphasis | Strong | Emoji | Link | Text | Del | Macro | Image
 
 InlineCode = ( "``" Code "``" ) | ( "`" Code "`" )
 
-Emphasis = "*" Text "*"
+Emphasis = "*" InlineBlocks "*"
 
-Strong = "**" Text "**"
+Strong = "**" InlineBlocks "**"
 
 Emoji = ":" EmojiName ":"
 
 Link = "[" LinkName "]" "(" Url [ LinkTitle ] ")"
 
-Image = "![" ImageAlt "]" "(" Url [ ImageTitle ] ")"
+Image = "![" ImageAlt "]" "(" Url ")"
 
-Del = "~" Text "~"
-
-HTMLTag = "<" RawHTMLTagContent ">"
+Del = "~" InlineBlock { InlineBlock } "~"
 
 ```
