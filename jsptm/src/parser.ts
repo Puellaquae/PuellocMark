@@ -31,21 +31,16 @@ class Peek {
 function parseRootBlock(data: Peek): Node {
     let macros: MacroCall[] = [];
     let node: Node;
-    while (!data.end()) {
-        if (data.peek(0, 4) === "<!M ") {
-            macros.push(...parseMacroCall(data));
-        } else if (data.peek() === "\n") {
-            data.next();
-            if (data.peek(0, 4) !== "<!M ") {
-                throw "Macro should on itself line if applied on rooted block";
-            }
+    const lines = data.rest().split("\n");
+    let idx = 0;
+    for (; idx < lines.length; idx++) {
+        if (/^(\<\!M [A-Za-z_]*?(\([0-9A-Za-z_,\. ]*?\))?\>)+$/.test(lines[idx])) {
+            macros.push(...parseMacroCall(new Peek(lines[idx])));
         } else {
             break;
         }
     }
-    if (data.end()) {
-        throw "Data shouldn't only has macro call";
-    }
+    data = new Peek(lines.splice(idx).join("\n"));
     switch (data.peek()) {
         case ">":
             if (data.peek(0, 2) === "> ") {
@@ -91,7 +86,7 @@ function parseRootBlock(data: Peek): Node {
     }
     node.macros = macros;
     if (!data.end()) {
-        throw "Data should be empty";
+        throw "Data shouldn't has rest after parse";
     }
     return node;
 }
@@ -301,11 +296,105 @@ function parseTable(data: Peek): Node {
 
 function parseInlineBlocks(data: Peek): Node[] {
     let nodes: Node[] = [];
-    let strbuf = "";
+    let textBuf: string[] = [];
+    let rawData: string[] = [];
+    let lastMacro: MacroCall[] = [];
+    function pushText() {
+        if (textBuf.length != 0) {
+            nodes.push({
+                type: "text",
+                data: { text: textBuf.join() },
+                rawData: rawData.join(),
+                macros: lastMacro,
+                children: []
+            });
 
-    for (const c of data.rest()) {
-        
+            textBuf = [];
+            rawData = [];
+            lastMacro = [];
+        }
     }
+
+    function pushNode(node: Node) {
+        node.macros.push(...lastMacro);
+        lastMacro = [];
+        nodes.push(node);
+    }
+
+    while (!data.end()) {
+        switch (data.peek()) {
+            case "*":
+                pushText();
+                pushNode(parseEmphasisAndStrong(data));
+                break;
+            case "`":
+                pushText();
+                pushNode(parseInlineCode(data));
+                break;
+            case "[":
+                pushText();
+                pushNode(parseLink(data));
+                break;
+            case "!":
+                if (data.peek(1) === "[") {
+                    pushText();
+                    pushNode(parseImage(data));
+                } else {
+                    textBuf.push("!");
+                    rawData.push("!");
+                    data.next();
+                }
+                break;
+            case ":":
+                const cap = /^:([a-z_]*?):/.exec(data.rest());
+                if (cap) {
+                    const emojiName = cap[1];
+                    data.next(cap[0].length);
+                    pushText();
+                    pushNode({
+                        type: "emoji",
+                        data: { name: emojiName },
+                        rawData: cap[0],
+                        macros: [],
+                        children: []
+                    });
+                } else {
+                    textBuf.push(":");
+                    rawData.push(":");
+                    data.next();
+                }
+                break;
+            case "<":
+                if (data.peek(0, 4) === "<!M ") {
+                    pushText();
+                    lastMacro = parseMacroCall(data);
+                } else {
+                    textBuf.push("<");
+                    rawData.push("<");
+                    data.next();
+                }
+                break;
+            case "\\":
+                if (/^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/.test(data.peek(1))) {
+                    textBuf.push(data.peek(1));
+                    rawData.push(data.peek(0, 2));
+                    data.next(2);
+                } else {
+                    textBuf.push("\\");
+                    rawData.push("\\");
+                    data.next();
+                }
+                break;
+            default:
+                textBuf.push(data.peek());
+                rawData.push(data.peek());
+                data.next();
+                break;
+        }
+    }
+
+    pushText();
+    return nodes;
 }
 
 function parseMacroCall(data: Peek): MacroCall[] {
@@ -314,6 +403,22 @@ function parseMacroCall(data: Peek): MacroCall[] {
     } else {
         return [];
     }
+}
+
+function parseEmphasisAndStrong(data: Peek): Node {
+
+}
+
+function parseInlineCode(data: Peek): Node {
+
+}
+
+function parseLink(data: Peek): Node {
+
+}
+
+function parseImage(data: Peek): Node {
+
 }
 
 export {

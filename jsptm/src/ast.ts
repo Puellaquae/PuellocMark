@@ -20,7 +20,7 @@ type NodeDatum = {
     del: { text: string },
     link: { name: string, title: string, url: string },
     image: { alt: string, title: string, url: string },
-    emoji: { text: string },
+    emoji: { name: string },
     text: { text: string },
     // Container Block
     quote: null,
