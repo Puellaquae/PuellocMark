@@ -11,21 +11,21 @@ type NodeDatum = {
     break: null,
     title: { level: number },
     fenceCode: { code: string, codetype: string },
-    table: { align: ("left" | "center" | "right")[] },
+    table: { align: ( "none" | "left" | "center" | "right")[] },
     para: null,
     // Inline Block
     inlineCode: { code: string },
-    emphasis: { text: string },
-    strong: { text: string },
-    del: { text: string },
-    link: { name: string, title: string, url: string },
-    image: { alt: string, title: string, url: string },
+    emphasis: null,
+    strong: null,
+    link: { name: string, url: string },
+    image: { alt: string, url: string },
     emoji: { name: string },
     text: { text: string },
     // Container Block
     quote: null,
     list: null,
     // Internal Block used for table
+    tableHeader: null,
     tableRow: null,
     tableField: null,
     // Internal use for list

@@ -1,6 +1,7 @@
 import TOML from '@ltd/j-toml';
 import { Node } from "./ast";
 import { MacroCall } from './marco';
+import { Regexs } from './reg';
 
 class Peek {
     content: string[];
@@ -10,22 +11,26 @@ class Peek {
     }
 
     peek(offset: number = 0, len: number = 1): string {
-        return this.content.slice(this.index + offset, this.index + offset + len).join();
+        return this.content.slice(this.index + offset, this.index + offset + len).join("");
     }
 
     next(len: number = 1): string {
-        const ret = this.content.slice(this.index, this.index + len).join();
+        const ret = this.content.slice(this.index, this.index + len).join("");
         this.index += len;
         return ret;
     }
 
     rest(): string {
-        return this.content.slice(this.index).join();
+        return this.content.slice(this.index).join("");
     }
 
     end(): boolean {
         return this.index >= this.content.length;
     }
+}
+
+function parseSingle(src: string): Node {
+    return parseRootBlock(new Peek(src.replaceAll(/\r\n/g, "\n")));
 }
 
 function parseRootBlock(data: Peek): Node {
@@ -34,7 +39,7 @@ function parseRootBlock(data: Peek): Node {
     const lines = data.rest().split("\n");
     let idx = 0;
     for (; idx < lines.length; idx++) {
-        if (/^(\<\!M [A-Za-z_]*?(\([0-9A-Za-z_,\. ]*?\))?\>)+$/.test(lines[idx])) {
+        if (Regexs.rootMacrocall.test(lines[idx])) {
             macros.push(...parseMacroCall(new Peek(lines[idx])));
         } else {
             break;
@@ -63,7 +68,7 @@ function parseRootBlock(data: Peek): Node {
             }
             break;
         case "#":
-            if (/^#{1, 6} /.test(data.peek(0, 7))) {
+            if (Regexs.title.test(data.peek(0, 7))) {
                 node = parseTitle(data);
             }
             else {
@@ -119,7 +124,9 @@ function parsePara(data: Peek): Node {
 
 function parseBreak(data: Peek): Node {
     const rawData = data.rest();
-    if (/^-{4,}$/.test(rawData)) {
+    const cap = Regexs.break.exec(rawData);
+    if (cap) {
+        data.next(cap[0].length);
         return {
             type: "break",
             data: null,
@@ -135,7 +142,7 @@ function parseBreak(data: Peek): Node {
 function parseList(data: Peek): Node {
     const rawData = data.rest();
     const listIdf = data.peek(0, 2);
-    if (!/(- )|(+ )|(* )/.test(listIdf)) {
+    if (!Regexs.listIdf.test(listIdf)) {
         throw "Not a list";
     }
     const lines = rawData.split("\n");
@@ -178,7 +185,7 @@ function parseList(data: Peek): Node {
 
 function parseTitle(data: Peek): Node {
     const rawData = data.rest();
-    if (!/^#{1, 6} /.test(data.peek(0, 7))) {
+    if (!Regexs.title.test(data.peek(0, 7))) {
         throw `${rawData} isn't match title`;
     }
     let level: number = 0;
@@ -231,7 +238,7 @@ function parseTable(data: Peek): Node {
     const splitR = /(?<!\\)\|/g;
     const trimR = /^\||\|$/g;
     const headers: Node = {
-        type: "tableRow",
+        type: "tableHeader",
         data: null,
         rawData: lines[0],
         macros: [],
@@ -252,7 +259,7 @@ function parseTable(data: Peek): Node {
     const align = lines[1].replaceAll(trimR, "").split(splitR).map(a => {
         switch (a) {
             case "-":
-                return "left";
+                return "none";
             case ":-":
                 return "left";
             case "-:":
@@ -294,7 +301,7 @@ function parseTable(data: Peek): Node {
 
 
 
-function parseInlineBlocks(data: Peek): Node[] {
+function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***"): Node[] {
     let nodes: Node[] = [];
     let textBuf: string[] = [];
     let rawData: string[] = [];
@@ -303,8 +310,8 @@ function parseInlineBlocks(data: Peek): Node[] {
         if (textBuf.length != 0) {
             nodes.push({
                 type: "text",
-                data: { text: textBuf.join() },
-                rawData: rawData.join(),
+                data: { text: textBuf.join("") },
+                rawData: rawData.join(""),
                 macros: lastMacro,
                 children: []
             });
@@ -321,21 +328,40 @@ function parseInlineBlocks(data: Peek): Node[] {
         nodes.push(node);
     }
 
+    let afterSpace = false;
     while (!data.end()) {
+        if (!afterSpace && (
+            (waitsign === "*" && /^\*(?!\*)|^\*{3}/.test(data.peek(0, 3))) ||
+            (waitsign === "**" && data.peek(0, 2) === "**") ||
+            (waitsign === "***" && data.peek(0, 1) === "*")
+        )) {
+            pushText();
+            return nodes;
+        }
+        afterSpace = false;
         switch (data.peek()) {
-            case "*":
-                pushText();
-                pushNode(parseEmphasisAndStrong(data));
+            case "*": {
+                if (/^(\*{1,3}(?![ *]))/.test(data.peek(0, 4))) {
+                    pushText();
+                    pushNode(parseEmphasisAndStrong(data));
+                } else {
+                    textBuf.push("*");
+                    rawData.push("*");
+                    data.next();
+                }
                 break;
-            case "`":
+            }
+            case "`": {
                 pushText();
                 pushNode(parseInlineCode(data));
                 break;
-            case "[":
+            }
+            case "[": {
                 pushText();
                 pushNode(parseLink(data));
                 break;
-            case "!":
+            }
+            case "!": {
                 if (data.peek(1) === "[") {
                     pushText();
                     pushNode(parseImage(data));
@@ -345,9 +371,10 @@ function parseInlineBlocks(data: Peek): Node[] {
                     data.next();
                 }
                 break;
-            case ":":
-                const cap = /^:([a-z_]*?):/.exec(data.rest());
-                if (cap) {
+            }
+            case ":": {
+                const cap = Regexs.emoji.exec(data.rest());
+                if (cap && waitsign) {
                     const emojiName = cap[1];
                     data.next(cap[0].length);
                     pushText();
@@ -364,7 +391,8 @@ function parseInlineBlocks(data: Peek): Node[] {
                     data.next();
                 }
                 break;
-            case "<":
+            }
+            case "<": {
                 if (data.peek(0, 4) === "<!M ") {
                     pushText();
                     lastMacro = parseMacroCall(data);
@@ -374,8 +402,9 @@ function parseInlineBlocks(data: Peek): Node[] {
                     data.next();
                 }
                 break;
-            case "\\":
-                if (/^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/.test(data.peek(1))) {
+            }
+            case "\\": {
+                if (Regexs.escape.test(data.peek(1))) {
                     textBuf.push(data.peek(1));
                     rawData.push(data.peek(0, 2));
                     data.next(2);
@@ -385,11 +414,20 @@ function parseInlineBlocks(data: Peek): Node[] {
                     data.next();
                 }
                 break;
-            default:
+            }
+            case " ": {
+                afterSpace = true;
+                textBuf.push(" ");
+                rawData.push(" ");
+                data.next();
+                break;
+            }
+            default: {
                 textBuf.push(data.peek());
                 rawData.push(data.peek());
                 data.next();
                 break;
+            }
         }
     }
 
@@ -398,29 +436,158 @@ function parseInlineBlocks(data: Peek): Node[] {
 }
 
 function parseMacroCall(data: Peek): MacroCall[] {
-    if (data.peek(0, 4) === "<!M ") {
-
+    if (Regexs.macrocall.test(data.rest())) {
+        let macros: MacroCall[] = [];
+        while (!data.end()) {
+            const cap = Regexs.macrocall.exec(data.rest());
+            if (cap) {
+                data.next(cap[0].length);
+                macros.push({
+                    name: cap[1],
+                    args: cap[2].split(",")
+                })
+            } else {
+                break;
+            }
+        }
+        return macros;
     } else {
-        return [];
+        throw "not found macro call";
     }
 }
 
 function parseEmphasisAndStrong(data: Peek): Node {
-
+    const cap = /^(\*{1,3}(?![ *]))/.exec(data.peek(0, 4));
+    let starcnt = 0;
+    let starstr;
+    if (cap) {
+        starcnt = cap[1].length;
+        starstr = cap[1];
+        data.next(starcnt);
+    } else {
+        throw "not found emphasis or strong";
+    }
+    let nodes: Node[] = [];
+    nodes.push(...parseInlineBlocks(data, starstr as "*" | "**" | "***"));
+    const cap2 = /^\*{1,2}/.exec(data.peek(0, 2));
+    if (cap2) {
+        const needstarcnt = Math.min(starcnt, cap2[0].length);
+        const reststarcnt = starcnt - needstarcnt;
+        data.next(needstarcnt);
+        if (reststarcnt === 0) {
+            const star = starcnt === 1 ? "*" : "**"
+            return {
+                type: starcnt === 1 ? "emphasis" : "strong",
+                data: null,
+                macros: [],
+                children: nodes,
+                rawData: star + nodes.map(n => n.rawData).join("") + star
+            };
+        } else if (reststarcnt === 1) {
+            const snode: Node = {
+                type: "strong",
+                data: null,
+                macros: [],
+                children: nodes,
+                rawData: "**" + nodes.map(n => n.rawData).join("") + "**"
+            };
+            const rnode = parseInlineBlocks(data, "*");
+            data.next(1);
+            return {
+                type: "emphasis",
+                data: null,
+                macros: [],
+                children: [snode, ...rnode],
+                rawData: "*" + snode.rawData + rnode.map(n => n.rawData).join("") + "*"
+            };
+        } else if (reststarcnt === 2) {
+            const enode: Node = {
+                type: "emphasis",
+                data: null,
+                macros: [],
+                children: nodes,
+                rawData: "*" + nodes.map(n => n.rawData).join("") + "*"
+            };
+            const rnode = parseInlineBlocks(data, "**");
+            data.next(2);
+            return {
+                type: "strong",
+                data: null,
+                macros: [],
+                children: [enode, ...rnode],
+                rawData: "**" + enode.rawData + rnode.map(n => n.rawData).join("") + "**"
+            };
+        } else {
+            throw "parse em&strong internal error, unreachable";
+        }
+    } else {
+        throw "not found emphasis or strong end";
+    }
 }
 
 function parseInlineCode(data: Peek): Node {
+    if (data.peek() !== "`") {
+        throw "inline code should warpped in `";
+    }
 
+    let fence = "";
+    let code = "";
+    while (!data.end()) {
+        switch (data.peek()) {
+            case "`": {
+                if (data.peek(0, fence.length) === fence) {
+                    return {
+                        type: "inlineCode",
+                        data: { code: code.replaceAll(/^ | $/g, "") },
+                        macros: [],
+                        rawData: fence + code + fence,
+                        children: []
+                    };
+                }
+            }
+            default: {
+                code += data.peek();
+            }
+        }
+    }
+
+    throw `not found inline code end ${fence}`;
 }
 
 function parseLink(data: Peek): Node {
-
+    const cap = Regexs.link.exec(data.rest());
+    if (cap) {
+        data.next(cap[0].length);
+        return {
+            type: "link",
+            data: { name: cap[1], url: cap[2] },
+            macros: [],
+            rawData: cap[0],
+            children: []
+        };
+    } else {
+        throw "not found link, do you need escape \\[ ?";
+    }
 }
 
 function parseImage(data: Peek): Node {
-
+    if (data.peek(0, 2) !== "![") {
+        throw "not found image";
+    }
+    data.next();
+    const node = parseLink(data);
+    if (node.type !== "link") {
+        throw "parser error";
+    }
+    return {
+        type: "image",
+        data: { alt: node.data.name, url: node.data.url },
+        rawData: node.rawData,
+        macros: [],
+        children: []
+    };
 }
 
 export {
-    parseRootBlock,
+    parseSingle,
 }
