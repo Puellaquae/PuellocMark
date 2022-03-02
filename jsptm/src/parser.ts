@@ -1,5 +1,5 @@
 import TOML from '@ltd/j-toml';
-import { Node } from "./ast";
+import { Node, Ptm } from "./ast";
 import { MacroCall } from './marco';
 import { Regexs } from './reg';
 
@@ -29,14 +29,37 @@ class Peek {
     }
 }
 
-function parseSingle(src: string): Node {
-    return parseRootBlock(new Peek(src.replaceAll(/\r\n/g, "\n")));
+function parseFull(ptm: string): Ptm {
+    const blocks = ptm.replaceAll("\r\n", "\n").split("\n\n").filter(b => b.length !== 0 && b !== "\n");
+    let idx = 0;
+    let metadata = {};
+    let globalMacroCalls: MacroCall[] = [];
+    if (blocks[idx].startsWith("<!---\n") && blocks[idx].endsWith("\n--->")) {
+        metadata = parseMetadata(blocks[idx++]);
+    }
+    if (blocks[idx].split("\n").every(Regexs.rootMacrocall.test)) {
+        blocks[idx++].split("\n").forEach(line => globalMacroCalls.push(...parseMacroCall(new Peek(line))));
+    }
+    let nodes = blocks.splice(idx).map(parseRootBlock);
+    return {
+        metadata,
+        globalMacroCalls,
+        nodes
+    }
 }
 
-function parseRootBlock(data: Peek): Node {
+function parseMetadata(src: string): object {
+    return TOML.parse(src.replaceAll(/(<!--)|(--->)/, ""), { bigint: false });
+}
+
+function parseSingle(src: string): Node {
+    return parseRootBlock(src.replaceAll(/\r\n/g, "\n"));
+}
+
+function parseRootBlock(src: string): Node {
     let macros: MacroCall[] = [];
     let node: Node;
-    const lines = data.rest().split("\n");
+    const lines = src.split("\n");
     let idx = 0;
     for (; idx < lines.length; idx++) {
         if (Regexs.rootMacrocall.test(lines[idx])) {
@@ -45,7 +68,7 @@ function parseRootBlock(data: Peek): Node {
             break;
         }
     }
-    data = new Peek(lines.splice(idx).join("\n"));
+    let data = new Peek(lines.splice(idx).join("\n"));
     switch (data.peek()) {
         case ">":
             if (data.peek(0, 2) === "> ") {
@@ -97,17 +120,20 @@ function parseRootBlock(data: Peek): Node {
 }
 
 function parseQuote(data: Peek): Node {
-    if (data.peek(0, 2) !== "> ") {
-        throw "Quote should startwith > ";
-    }
     const rawData = data.rest();
-    data.next(2);
+    data.next(rawData.length);
+    const inner = parseRootBlock(rawData.split("\n").map(l => {
+        if (!l.startsWith("> ")) {
+            throw "every line in quote should startwith > ";
+        }
+        return l.substring(2)
+    }).join("\n"));
     return {
         type: "quote",
         data: null,
         macros: [],
         rawData,
-        children: [parseRootBlock(data)]
+        children: [inner]
     };
 }
 
@@ -147,33 +173,42 @@ function parseList(data: Peek): Node {
     }
     const lines = rawData.split("\n");
     let nodes: Node[] = [];
-    let item = [];
-    let inItem = false;
+    let item: string[] = [];
+
+    function pushItem() {
+        if (item.length === 0) {
+            return;
+        }
+        let children = []
+        children.push(...parseInlineBlocks(new Peek(item[0].substring(2))));
+        if (item.length > 1) {
+            children.push(parseRootBlock(
+                item.slice(1)
+                    .map(l => l.substring(2))
+                    .join("\n")))
+        }
+        nodes.push({
+            type: "listItem",
+            data: null,
+            rawData: item.join("\n"),
+            macros: [],
+            children
+        });
+        item = [];
+    }
+
     for (const line of lines) {
         if (line.startsWith(listIdf)) {
-            let children = []
-            children.push(...parseInlineBlocks(new Peek(item[0])));
-            if (item.length > 1) {
-                children.push(parseRootBlock(new Peek(
-                    item.slice(1)
-                        .map(l => l.substring(2))
-                        .join("\n"))))
-            }
-            nodes.push({
-                type: "listItem",
-                data: null,
-                rawData: item.join("\n"),
-                macros: [],
-                children
-            });
-            item = [];
+            pushItem();
             item.push(line);
-        } else if (inItem && line.startsWith("  ")) {
+        } else if (line.startsWith("  ")) {
             item.push(line);
         } else {
             throw `List breaked at ${line}`;
         }
     }
+    pushItem();
+    data.next(rawData.length);
     return {
         type: "list",
         data: null,
@@ -290,6 +325,7 @@ function parseTable(data: Peek): Node {
             })
         };
     });
+    data.next(rawData.length);
     return {
         type: "table",
         data: { align },
@@ -298,8 +334,6 @@ function parseTable(data: Peek): Node {
         children: [headers, ...contents]
     }
 }
-
-
 
 function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***"): Node[] {
     let nodes: Node[] = [];
@@ -374,7 +408,7 @@ function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***"): Node[] {
             }
             case ":": {
                 const cap = Regexs.emoji.exec(data.rest());
-                if (cap && waitsign) {
+                if (cap) {
                     const emojiName = cap[1];
                     data.next(cap[0].length);
                     pushText();
@@ -588,6 +622,4 @@ function parseImage(data: Peek): Node {
     };
 }
 
-export {
-    parseSingle,
-}
+export { parseSingle, parseFull }

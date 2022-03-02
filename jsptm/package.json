@@ -1,10 +1,12 @@
 {
   "name": "jsptm",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "JS/TS implement for PuellocMark",
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "run": "tsc -p tsconfig.build.json & node ./lib/index.js",
     "test": "jest",
     "test-c": "jest --coverage"
   },

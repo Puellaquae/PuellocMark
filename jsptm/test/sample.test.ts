@@ -29,7 +29,7 @@ describe("Emphasis and strong emphasis", () => {
     it("21", () => { expect(p("**foo *bar***")).toBe("<p><strong>foo <em>bar</em></strong></p>"); });
     it("22", () => { expect(p("**foo**")).toBe("<p><strong>foo</strong></p>"); });
     it("23", () => { expect(p("***foo***")).toBe("<p><em><strong>foo</strong></em></p>"); });
-})
+});
 
 describe("Title", () => {
     it("1", () => { expect(p("# a")).toBe("<h1>a</h1>"); });
@@ -46,4 +46,34 @@ describe("Title", () => {
 describe("Break", () => {
     it("1", () => { expect(p("----")).toBe("<hr/>"); });
     it("2", () => { expect(p("------")).toBe("<hr/>"); });
-})
+});
+
+describe("List", () => {
+    it("1", () => { expect(p("- 1\n- 2\n- 3")).toBe("<ul><li>1</li><li>2</li><li>3</li></ul>"); });
+    it("2", () => { expect(p("- 1\n- 2\n  - 21\n  - 22")).toBe("<ul><li>1</li><li>2<ul><li>21</li><li>22</li></ul></li></ul>"); });
+});
+
+describe("Link", () => {
+    it("1", () => { expect(p("[foo](bar)")).toBe('<p><a href="bar">foo</a></p>'); });
+    it("2", () => { expect(p("[foo bar](bar foo)")).toBe('<p><a href="bar foo">foo bar</a></p>'); });
+});
+
+describe("Image", () => {
+    it("1", () => { expect(p("![foo](bar)")).toBe('<p><img alt="foo" src="bar"/></p>'); });
+    it("2", () => { expect(p("![foo bar](bar foo)")).toBe('<p><img alt="foo bar" src="bar foo"/></p>'); });
+});
+
+describe("Blockquote", () => {
+    it("1", () => { expect(p("> xxx")).toBe('<blockquote><p>xxx</p></blockquote>'); });
+    it("2", () => { expect(p("> - 1\n> - 2\n> - 3")).toBe('<blockquote><ul><li>1</li><li>2</li><li>3</li></ul></blockquote>'); });
+});
+
+describe("Emoji", () => {
+    it("1", () => { expect(p(":emoji_is_unsupported_now:")).toBe('<p><span>emoji_is_unsupported_now</span></p>'); });
+});
+
+describe("Table", () => {
+    it("1", () => { expect(p("|foo|\n|-|\n|bar|")).toBe('<table><thead><th>foo</th></thead><tbody><tr><td>bar</td></tr></tbody></table>'); });
+    it("2", () => { expect(p("|foo1|foo2|\n|:-|-:|\n|bar1|bar2|")).toBe('<table><thead><th align="left">foo1</th><th align="right">foo2</th></thead><tbody><tr><td align="left">bar1</td><td align="right">bar2</td></tr></tbody></table>'); });
+    it("3", () => { expect(p("|foo|\n|:-:|\n|bar|\n|bas|\n|bat|")).toBe('<table><thead><th align="center">foo</th></thead><tbody><tr><td align="center">bar</td></tr><tr><td align="center">bas</td></tr><tr><td align="center">bat</td></tr></tbody></table>'); });
+});
