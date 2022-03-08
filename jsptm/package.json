@@ -1,6 +1,6 @@
 {
   "name": "jsptm",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "JS/TS implement for PuellocMark",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -28,5 +28,8 @@
   "homepage": "https://github.com/Puellaquae/PuellocMark",
   "dependencies": {
     "@ltd/j-toml": "^1.29.0"
-  }
+  },
+  "files": [
+    "./lib"
+  ]
 }

@@ -34,10 +34,10 @@ function parseFull(ptm: string): Ptm {
     let idx = 0;
     let metadata = {};
     let globalMacroCalls: MacroCall[] = [];
-    if (blocks[idx].startsWith("<!---\n") && blocks[idx].endsWith("\n--->")) {
+    if (idx < blocks.length && blocks[idx].startsWith("<!---\n") && blocks[idx].endsWith("\n--->")) {
         metadata = parseMetadata(blocks[idx++]);
     }
-    if (blocks[idx].split("\n").every(Regexs.rootMacrocall.test)) {
+    if (idx < blocks.length && blocks[idx].split("\n").every(v => Regexs.rootMacrocall.test(v))) {
         blocks[idx++].split("\n").forEach(line => globalMacroCalls.push(...parseMacroCall(new Peek(line))));
     }
     let nodes = blocks.splice(idx).map(parseRootBlock);
@@ -49,7 +49,8 @@ function parseFull(ptm: string): Ptm {
 }
 
 function parseMetadata(src: string): object {
-    return TOML.parse(src.replaceAll(/(<!--)|(--->)/, ""), { bigint: false });
+    const toml = src.replaceAll(/(<!---)|(--->)/g, "")
+    return TOML.parse(toml, { bigint: false });
 }
 
 function parseSingle(src: string): Node {
@@ -478,7 +479,7 @@ function parseMacroCall(data: Peek): MacroCall[] {
                 data.next(cap[0].length);
                 macros.push({
                     name: cap[1],
-                    args: cap[2].split(",")
+                    args: cap[3]?.split(",") ?? []
                 })
             } else {
                 break;
