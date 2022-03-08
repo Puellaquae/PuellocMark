@@ -12,9 +12,12 @@ describe("Matedata", () => {
     it("sample", () => {
         expect(f('<!---\n\
 # This is a TOML document\n\
+\n\
 title = "TOML Example"\n\
+\n\
 [owner]\n\
 name = "Tom Preston-Werner"\n\
+\n\
 [database]\n\
 enabled = true\n\
 ports = [ 8000, 8001, 8002 ]\n\

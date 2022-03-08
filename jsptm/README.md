@@ -1,6 +1,8 @@
 # JSPTM
 
-JSPTM is a JS/TS implement for PuellocMark.
+JSPTM is a JS/TS implement for PuellocMark. 
+
+**This package is unstable now. Please always use the latest version first.**
 
 ## Usage
 

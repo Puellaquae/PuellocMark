@@ -29,8 +29,59 @@ class Peek {
     }
 }
 
+function splitBlock(src: string): string[] {
+    let block: string[][] = [];
+    let cur: string[] = [];
+    let unfin = false;
+    let waitfor: string = "";
+    function NewBlock() {
+        block.push(cur);
+        cur = [];
+    }
+    for (const rawblock of src.split("\n\n")) {
+        if (rawblock.length === 0 || rawblock === "\n") {
+            continue;
+        }
+        let rawb = rawblock;
+        if (rawb.endsWith("\n")) {
+            rawb.trimEnd()
+        }
+        cur.push(rawb);
+        if (unfin) {
+            if (rawb.endsWith(waitfor)) {
+                NewBlock();
+                unfin = false;
+            }
+        } else {
+            if (rawb.startsWith("<!---\n")) {
+                if (rawb.endsWith("\n--->")) {
+                    NewBlock();
+                } else {
+                    unfin = true;
+                    waitfor = "\n--->";
+                }
+            } else if (rawb.split("\n").some(l => l.startsWith("```"))) {
+                let cap = /^`{3}/.exec(rawb.split("\n").filter(l => l.startsWith("```"))[0]);
+                if (!cap) {
+                    throw "internal error unreachable!"
+                }
+                const fence = cap[0];
+                if (rawb.endsWith(`\n${fence}`)) {
+                    NewBlock();
+                } else {
+                    unfin = true;
+                    waitfor = `\n${fence}`
+                }
+            } else {
+                NewBlock();
+            }
+        }
+    }
+    return block.map(a => a.join("\n\n"));
+}
+
 function parseFull(ptm: string): Ptm {
-    const blocks = ptm.replaceAll("\r\n", "\n").split("\n\n").filter(b => b.length !== 0 && b !== "\n");
+    const blocks = splitBlock(ptm.replaceAll("\r\n", "\n"));
     let idx = 0;
     let metadata = {};
     let globalMacroCalls: MacroCall[] = [];
@@ -248,17 +299,18 @@ function parseFenceCode(data: Peek): Node {
     let fence = "";
     while (!data.end()) {
         if (data.peek() === "`") {
-            fence += "`";
+            fence += data.next();
         } else {
             break;
         }
     }
     const lines = rawData.split("\n");
-    if (lines[lines.length - 1] === fence) {
+    if (lines[lines.length - 1] !== fence) {
         throw "Fence end isn't equal to fence start"
     }
     const codetype = lines[0].replaceAll(fence, "");
     const code = lines.slice(1, -1).join("\n");
+    data.next(rawData.length);
     return {
         type: "fenceCode",
         data: { code, codetype },
@@ -561,16 +613,18 @@ function parseEmphasisAndStrong(data: Peek): Node {
 }
 
 function parseInlineCode(data: Peek): Node {
-    if (data.peek() !== "`") {
+    const cap = /^`{1,2}(?!`)/.exec(data.peek(0, 3));
+    if (!cap) {
         throw "inline code should warpped in `";
     }
-
-    let fence = "";
+    data.next(cap[0].length);
+    let fence = cap[0];
     let code = "";
     while (!data.end()) {
         switch (data.peek()) {
             case "`": {
                 if (data.peek(0, fence.length) === fence) {
+                    data.next(fence.length);
                     return {
                         type: "inlineCode",
                         data: { code: code.replaceAll(/^ | $/g, "") },
@@ -581,7 +635,7 @@ function parseInlineCode(data: Peek): Node {
                 }
             }
             default: {
-                code += data.peek();
+                code += data.next();
             }
         }
     }

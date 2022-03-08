@@ -12,7 +12,7 @@ type MacroCall = {
 
 function applyMacro(node: Node, macroCall: MacroCall, macros: { [key: string]: Macro }): Node {
     const macro = macros[macroCall.name];
-    if ((macro.filter.length === 0 || macro.filter.indexOf(node.type) !== -1)) {
+    if (macro && (macro.filter.length === 0 || macro.filter.indexOf(node.type) !== -1)) {
         return macro.func(node, macroCall.args);
     } else {
         return node;

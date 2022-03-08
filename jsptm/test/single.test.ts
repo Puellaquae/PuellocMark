@@ -4,7 +4,7 @@ import { node2html } from "../src/render";
 function p(ptm: string): string {
     return node2html(parseSingle(ptm));
 }
-
++
 describe("Emphasis and strong emphasis", () => {
     it("1", () => { expect(p("*foo bar*")).toBe("<p><em>foo bar</em></p>"); });
     it("2", () => { expect(p(" * foo bar * ")).toBe("<p> * foo bar * </p>"); });
@@ -77,3 +77,24 @@ describe("Table", () => {
     it("2", () => { expect(p("|foo1|foo2|\n|:-|-:|\n|bar1|bar2|")).toBe('<table><thead><th align="left">foo1</th><th align="right">foo2</th></thead><tbody><tr><td align="left">bar1</td><td align="right">bar2</td></tr></tbody></table>'); });
     it("3", () => { expect(p("|foo|\n|:-:|\n|bar|\n|bas|\n|bat|")).toBe('<table><thead><th align="center">foo</th></thead><tbody><tr><td align="center">bar</td></tr><tr><td align="center">bas</td></tr><tr><td align="center">bat</td></tr></tbody></table>'); });
 });
+
+describe("InlineCode", () => {
+    it("empty", () => {expect(p("` `")).toBe("<p><code></code></p>")})
+    it("double sign", () => {expect(p("`` ` ``")).toBe("<p><code>`</code></p>")})
+    it("code", () => {expect(p("``abcc<  >cbaa``")).toBe("<p><code>abcc&lt;  &gt;cbaa</code></p>")})
+    it("near", () => {expect(p("`aa``bb`")).toBe("<p><code>aa</code><code>bb</code></p>")})
+})
+
+describe("FenceCode", () => {
+    it("empty", () => {expect(p("```\n```")).toBe('<pre><code lang=""></code></pre>')});
+    it("simple", () => {expect(p(
+'```js\n\
+it("empty", () => {\n\
+    expect(p("```\n```")).toBe(\'<pre><code lang=""></code></pre>\')\n\
+});\n\
+```'
+    )).toBe('<pre><code lang="js">\
+it("empty", () =&gt; {\n\
+    expect(p("```\n```")).toBe(\'&lt;pre&gt;&lt;code lang=""&gt;&lt;/code&gt;&lt;/pre&gt;\')\n\
+});</code></pre>')});
+})

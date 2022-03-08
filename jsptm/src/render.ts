@@ -10,13 +10,13 @@ function node2html(node: Node): string {
         case "emphasis":
             return `<em>${content()}</em>`;
         case "fenceCode":
-            return `<pre><code>${node.data.code}</code></pre>`;
+            return `<pre><code lang="${node.data.codetype}">${node.data.code.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code></pre>`;
         case "html":
             return node.data.html;
         case "image":
             return `<img alt="${node.data.alt}" src="${node.data.url}"/>`;
         case "inlineCode":
-            return `<code>${node.data.code}</code>`;
+            return `<code>${node.data.code.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code>`;
         case "link":
             return `<a href="${node.data.url}">${node.data.name}</a>`;
         case "list":
