@@ -5,7 +5,7 @@ function p(ptm: string): string {
     return node2html(parseSingle(ptm));
 }
 +
-describe("Emphasis and strong emphasis", () => {
+describe("Emphasis", () => {
     it("1", () => { expect(p("*foo bar*")).toBe("<p><em>foo bar</em></p>"); });
     it("2", () => { expect(p(" * foo bar * ")).toBe("<p> * foo bar * </p>"); });
     it("3", () => { expect(p("foo*bar*")).toBe("<p>foo<em>bar</em></p>"); });

@@ -32,6 +32,8 @@ type NodeDatum = {
     listItem: null,
     // raw HTML can only be created by parser
     html: { html: string },
+    // For macro to return nothing
+    void: null
 };
 
 type NodeType = keyof NodeDatum;

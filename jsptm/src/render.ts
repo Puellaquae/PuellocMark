@@ -77,6 +77,8 @@ function node2html(node: Node): string {
             return `${node.data.text}`;
         case "title":
             return `<h${node.data.level}>${content()}</h${node.data.level}>`;
+        case "void":
+            return "";
         default:
             throw `unknown node ${node}`;
     }
