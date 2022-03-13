@@ -1,8 +1,7 @@
-import { Ptm } from "../src/ast";
-import { parseFull } from "../src/parser";
+import { Ptm } from "../src/";
 
 function f(ptm: string): Ptm {
-    return parseFull(ptm);
+    return Ptm.parse(ptm);
 }
 
 function m(o: object): Map<string, unknown> {

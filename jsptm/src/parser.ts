@@ -1,5 +1,6 @@
 import TOML from '@ltd/j-toml';
-import { Node, Ptm } from "./ast";
+import { Ptm } from '.';
+import { Node } from "./ast";
 import { InvalidSyntaxError, UnexpectedContentError, UnreachableError } from './error';
 import { MacroCall } from './marco';
 import { Regexs } from './reg';
@@ -94,11 +95,11 @@ function parseFull(ptm: string): Ptm {
         blocks[idx++].split("\n").forEach(line => globalMacroCalls.push(...parseMacroCall(new Peek(line))));
     }
     let nodes = blocks.splice(idx).map(parseRootBlock);
-    return {
+    return new Ptm(
         metadata,
         globalMacroCalls,
         nodes
-    }
+    );
 }
 
 function parseMetadata(src: string): object {

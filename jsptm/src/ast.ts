@@ -1,11 +1,5 @@
 import { MacroCall } from "./marco";
 
-type Ptm = {
-    metadata: Map<string, unknown>,
-    globalMacroCalls: MacroCall[],
-    nodes: Node[]
-};
-
 type NodeDatum = {
     // Rootable Block
     break: null,
@@ -47,4 +41,4 @@ type Node = {
     rawData: string
 } & Distribute<NodeType>;
 
-export { Ptm, Node, NodeType }
+export { Node, NodeType }

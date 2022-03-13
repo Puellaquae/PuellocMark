@@ -1,4 +1,5 @@
-import { Node, NodeType, Ptm } from "./ast";
+import { Ptm } from ".";
+import { Node, NodeType } from "./ast";
 
 interface Macro {
     filter: NodeType[],

@@ -7,20 +7,14 @@ JSPTM is a JS/TS implement for PuellocMark.
 ## Usage
 
 ```js
-const jsptm = require("jsptm")
-jsptm.PuellocMark(...)
+import { PuellocMark } from "jsptm"
+const html = PuellocMark(src, "html", macro, forcedMacroCalls)
 
 // or
 
-import { PuellocMark } from "jsptm"
-PuellocMark(...)
-```
+import { Ptm } from "jsptm"
+const html = Ptm.parse(src)
+                .applyMacro(marcos, forcedMacroCalls)
+                .render("html")
 
-```ts
-declare function PuellocMark(
-    src: string, out: "html", macros: { [name: string]: Macro }, forceMacro: string[]): {
-    metadata: {};
-    output: string;
-};
 ```
-
