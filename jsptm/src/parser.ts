@@ -1,5 +1,6 @@
 import TOML from '@ltd/j-toml';
 import { Node, Ptm } from "./ast";
+import { InvalidSyntaxError, UnexpectedContentError, UnreachableError } from './error';
 import { MacroCall } from './marco';
 import { Regexs } from './reg';
 
@@ -44,7 +45,7 @@ function splitBlock(src: string): string[] {
         }
         let rawb = rawblock;
         if (rawb.endsWith("\n")) {
-            rawb.trimEnd()
+            rawb = rawb.trimEnd()
         }
         cur.push(rawb);
         if (unfin) {
@@ -63,7 +64,7 @@ function splitBlock(src: string): string[] {
             } else if (rawb.split("\n").some(l => l.startsWith("```"))) {
                 let cap = /^`{3}/.exec(rawb.split("\n").filter(l => l.startsWith("```"))[0]);
                 if (!cap) {
-                    throw "internal error unreachable!"
+                    throw new UnreachableError();
                 }
                 const fence = cap[0];
                 if (rawb.endsWith(`\n${fence}`)) {
@@ -77,6 +78,7 @@ function splitBlock(src: string): string[] {
             }
         }
     }
+    NewBlock();
     return block.map(a => a.join("\n\n"));
 }
 
@@ -166,7 +168,7 @@ function parseRootBlock(src: string): Node {
     }
     node.macros = macros;
     if (!data.end()) {
-        throw "Data shouldn't has rest after parse";
+        throw new UnexpectedContentError("Not empty after parsing");
     }
     return node;
 }
@@ -176,7 +178,7 @@ function parseQuote(data: Peek): Node {
     data.next(rawData.length);
     const inner = parseRootBlock(rawData.split("\n").map(l => {
         if (!l.startsWith("> ")) {
-            throw "every line in quote should startwith > ";
+            throw new InvalidSyntaxError("quote", data, "every line in quote should startwith > ");
         }
         return l.substring(2)
     }).join("\n"));
@@ -213,7 +215,7 @@ function parseBreak(data: Peek): Node {
             children: []
         }
     } else {
-        throw `${rawData} isn't break`;
+        throw new InvalidSyntaxError("break", data);
     }
 }
 
@@ -221,7 +223,7 @@ function parseList(data: Peek): Node {
     const rawData = data.rest();
     const listIdf = data.peek(0, 2);
     if (!Regexs.listIdf.test(listIdf)) {
-        throw "Not a list";
+        throw new InvalidSyntaxError("list", data)
     }
     const lines = rawData.split("\n");
     let nodes: Node[] = [];
@@ -256,7 +258,7 @@ function parseList(data: Peek): Node {
         } else if (line.startsWith("  ")) {
             item.push(line);
         } else {
-            throw `List breaked at ${line}`;
+            throw new InvalidSyntaxError("list", data, `List breaked at ${line}`);
         }
     }
     pushItem();
@@ -273,7 +275,7 @@ function parseList(data: Peek): Node {
 function parseTitle(data: Peek): Node {
     const rawData = data.rest();
     if (!Regexs.title.test(data.peek(0, 7))) {
-        throw `${rawData} isn't match title`;
+        throw new InvalidSyntaxError("title", data, `${rawData} isn't match title`);
     }
     let level: number = 0;
     while (!data.end()) {
@@ -306,7 +308,7 @@ function parseFenceCode(data: Peek): Node {
     }
     const lines = rawData.split("\n");
     if (lines[lines.length - 1] !== fence) {
-        throw "Fence end isn't equal to fence start"
+        throw new InvalidSyntaxError("fenceCode", data, "Fence end isn't equal to fence start");
     }
     const codetype = lines[0].replaceAll(fence, "");
     const code = lines.slice(1, -1).join("\n");
@@ -342,7 +344,7 @@ function parseTable(data: Peek): Node {
     };
     const colcnt = headers.children.length;
     if (lines.length < 2) {
-        throw `Not found table align in ${rawData}`;
+        throw new InvalidSyntaxError("table", data, `Not found table align in ${rawData}`);
     }
     const align = lines[1].replaceAll(trimR, "").split(splitR).map(a => {
         switch (a) {
@@ -355,11 +357,11 @@ function parseTable(data: Peek): Node {
             case ":-:":
                 return "center";
             default:
-                throw `${a} is not vaild value of column align`;
+                throw new InvalidSyntaxError("table", data, `${a} is not vaild value of column align`);
         }
     });
     if (align.length !== colcnt) {
-        throw "Table align count not equal to header";
+        throw new InvalidSyntaxError("table", data, "Table align count not equal to header");
     }
     const contents: Node[] = lines.slice(2).map(l => {
         return {
@@ -539,7 +541,7 @@ function parseMacroCall(data: Peek): MacroCall[] {
         }
         return macros;
     } else {
-        throw "not found macro call";
+        throw new InvalidSyntaxError("macroCall", data);
     }
 }
 
@@ -552,7 +554,7 @@ function parseEmphasisAndStrong(data: Peek): Node {
         starstr = cap[1];
         data.next(starcnt);
     } else {
-        throw "not found emphasis or strong";
+        throw new InvalidSyntaxError("emphasis", data);
     }
     let nodes: Node[] = [];
     nodes.push(...parseInlineBlocks(data, starstr as "*" | "**" | "***"));
@@ -605,17 +607,17 @@ function parseEmphasisAndStrong(data: Peek): Node {
                 rawData: "**" + enode.rawData + rnode.map(n => n.rawData).join("") + "**"
             };
         } else {
-            throw "parse em&strong internal error, unreachable";
+            throw new UnreachableError();
         }
     } else {
-        throw "not found emphasis or strong end";
+        throw new InvalidSyntaxError("emphasis", data, "not found em&strong end");
     }
 }
 
 function parseInlineCode(data: Peek): Node {
     const cap = /^`{1,2}(?!`)/.exec(data.peek(0, 3));
     if (!cap) {
-        throw "inline code should warpped in `";
+        throw new InvalidSyntaxError("inlineCode", data, "inline code should warpped in `");
     }
     data.next(cap[0].length);
     let fence = cap[0];
@@ -640,7 +642,7 @@ function parseInlineCode(data: Peek): Node {
         }
     }
 
-    throw `not found inline code end ${fence}`;
+    throw new InvalidSyntaxError("inlineCode",data , `not found inline code end ${fence}`);
 }
 
 function parseLink(data: Peek): Node {
@@ -655,18 +657,18 @@ function parseLink(data: Peek): Node {
             children: []
         };
     } else {
-        throw "not found link, do you need escape \\[ ?";
+        throw new InvalidSyntaxError("link", data, "not found link, do you need escape \\[ ?");
     }
 }
 
 function parseImage(data: Peek): Node {
     if (data.peek(0, 2) !== "![") {
-        throw "not found image";
+        throw new InvalidSyntaxError("image", data);
     }
     data.next();
     const node = parseLink(data);
     if (node.type !== "link") {
-        throw "parser error";
+        throw new UnreachableError();
     }
     return {
         type: "image",
@@ -677,4 +679,4 @@ function parseImage(data: Peek): Node {
     };
 }
 
-export { parseSingle, parseFull }
+export { parseSingle, parseFull, Peek }

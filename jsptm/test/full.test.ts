@@ -5,10 +5,15 @@ function f(ptm: string): Ptm {
     return parseFull(ptm);
 }
 
+function m(o: object): Map<string, unknown> {
+    return new Map(Object.entries(o));
+}
+
 describe("Matedata", () => {
-    it("empty", () => { expect(f("").metadata).toEqual({}) });
-    it("empty toml", () => { expect(f("<!---\n--->").metadata).toEqual({}) });
-    it("simple", () => { expect(f('<!---\nstr = "str"\n--->').metadata).toEqual({ str: "str" }) });
+    it("empty", () => { expect(f("").metadata).toEqual(m({})) });
+    it("empty toml", () => { expect(f("<!---\n--->").metadata).toEqual(m({})) });
+    it("blank after only metadata", () => { expect(f('<!---\nstr = "str"\n--->\n').metadata).toEqual(m({ str: "str" })) });
+    it("simple", () => { expect(f('<!---\nstr = "str"\n--->').metadata).toEqual(m({ str: "str" })) });
     it("sample", () => {
         expect(f('<!---\n\
 # This is a TOML document\n\
@@ -23,7 +28,7 @@ enabled = true\n\
 ports = [ 8000, 8001, 8002 ]\n\
 data = [ ["delta", "phi"], [3.14] ]\n\
 temp_targets = { cpu = 79.5, case = 72.0 }\n\
---->').metadata).toEqual({
+--->').metadata).toEqual(m({
             title: "TOML Example",
             owner: { name: "Tom Preston-Werner" },
             database: {
@@ -32,7 +37,7 @@ temp_targets = { cpu = 79.5, case = 72.0 }\n\
                 data: [["delta", "phi"], [3.14]],
                 temp_targets: { cpu: 79.5, case: 72.0 }
             }
-        })
+        }))
     });
 });
 
