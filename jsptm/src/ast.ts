@@ -1,7 +1,7 @@
 import { MacroCall } from "./marco";
 
 type Ptm = {
-    metadata: object,
+    metadata: Map<string, unknown>,
     globalMacroCalls: MacroCall[],
     nodes: Node[]
 };

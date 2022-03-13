@@ -83,10 +83,10 @@ function splitBlock(src: string): string[] {
 function parseFull(ptm: string): Ptm {
     const blocks = splitBlock(ptm.replaceAll("\r\n", "\n"));
     let idx = 0;
-    let metadata = {};
+    let metadata: Ptm["metadata"] = new Map();
     let globalMacroCalls: MacroCall[] = [];
     if (idx < blocks.length && blocks[idx].startsWith("<!---\n") && blocks[idx].endsWith("\n--->")) {
-        metadata = parseMetadata(blocks[idx++]);
+        metadata = new Map(Object.entries(parseMetadata(blocks[idx++])));
     }
     if (idx < blocks.length && blocks[idx].split("\n").every(v => Regexs.rootMacrocall.test(v))) {
         blocks[idx++].split("\n").forEach(line => globalMacroCalls.push(...parseMacroCall(new Peek(line))));
