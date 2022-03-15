@@ -1,5 +1,6 @@
 import { Ptm } from ".";
 import { Node, NodeType } from "./ast";
+import { MacroApplyError } from "./error";
 
 interface Macro {
     filter: NodeType[],
@@ -14,7 +15,15 @@ type MacroCall = {
 function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall, macros: { [key: string]: Macro }): Node {
     const macro = macros[macroCall.name];
     if (macro && (macro.filter.length === 0 || macro.filter.indexOf(node.type) !== -1)) {
-        return macro.func(node, metadata, macroCall.args);
+        try {
+            return macro.func(node, metadata, macroCall.args);
+        } catch (e) {
+            if (e instanceof Error) {
+                throw new MacroApplyError(node, macroCall, e);
+            } else {
+                throw new MacroApplyError(node, macroCall, new Error(JSON.stringify(e)));
+            }
+        }
     } else {
         return node;
     }

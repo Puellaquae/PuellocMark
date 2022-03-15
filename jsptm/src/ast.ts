@@ -24,8 +24,9 @@ type NodeDatum = {
     tableField: null,
     // Internal use for list
     listItem: null,
-    // raw HTML can only be created by parser
-    html: { html: string },
+    // HTML can only be created by parser
+    rawHtml: { html: string },
+    htmlTag: { tag: string, attr: string[]},
     // For macro to return nothing
     void: null
 };

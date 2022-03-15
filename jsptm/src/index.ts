@@ -1,4 +1,5 @@
 import { Node } from "./ast";
+import { EasyMap } from "./helper";
 import { applyMacroRecursive, Macro, MacroCall } from "./marco";
 import { parseFull } from "./parser";
 import { node2html } from "./render";
@@ -47,4 +48,4 @@ function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }
     };
 }
 
-export { puellocMark, Ptm, Macro };
+export { puellocMark, Ptm, Macro, Node, EasyMap };

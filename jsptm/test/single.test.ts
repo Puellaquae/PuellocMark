@@ -4,7 +4,7 @@ import { node2html } from "../src/render";
 function p(ptm: string): string {
     return node2html(parseSingle(ptm));
 }
-+
+
 describe("Emphasis", () => {
     it("1", () => { expect(p("*foo bar*")).toBe("<p><em>foo bar</em></p>"); });
     it("2", () => { expect(p(" * foo bar * ")).toBe("<p> * foo bar * </p>"); });
