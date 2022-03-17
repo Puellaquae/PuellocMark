@@ -30,8 +30,8 @@ function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall,
 }
 
 function applyMacroRecursive(node: Node, metadata: Ptm["metadata"], globalMacroCall: MacroCall[], macros: { [key: string]: Macro }): Node {
-    node.children.map(c => applyMacroRecursive(c, metadata, globalMacroCall, macros));
-    for (const macroCall of [...globalMacroCall, ...node.macros]) {
+    node.children = node.children.map(c => applyMacroRecursive(c, metadata, globalMacroCall, macros));
+    for (const macroCall of [...node.macros, ...globalMacroCall]) {
         node = applyMacro(node, metadata, macroCall, macros);
     }
     return node;

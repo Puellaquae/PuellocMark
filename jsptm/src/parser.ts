@@ -464,7 +464,7 @@ function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***"): Node[] {
             }
             case ":": {
                 const cap = Regexs.emoji.exec(data.rest());
-                if (cap) {
+                if (cap && cap[1] !== "") {
                     const emojiName = cap[1];
                     data.next(cap[0].length);
                     pushText();

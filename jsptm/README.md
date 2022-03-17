@@ -6,6 +6,10 @@ JSPTM is a JS/TS implement for PuellocMark.
 
 ## Usage
 
+```bash
+npm i jsptm
+```
+
 ```js
 import { PuellocMark } from "jsptm"
 const html = PuellocMark(src, "html", macro, forcedMacroCalls)
