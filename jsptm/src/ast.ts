@@ -5,7 +5,7 @@ type NodeDatum = {
     break: null,
     title: { level: number },
     fenceCode: { code: string, codetype: string },
-    table: { align: ( "none" | "left" | "center" | "right")[] },
+    table: { align: ("none" | "left" | "center" | "right")[] },
     para: null,
     // Inline Block
     inlineCode: { code: string },
@@ -26,9 +26,11 @@ type NodeDatum = {
     listItem: null,
     // HTML can only be created by parser
     rawHtml: { html: string },
-    htmlTag: { tag: string, attr: string[]},
+    htmlTag: { tag: string, attr: string[] },
     // For macro to return nothing
-    void: null
+    void: null,
+    // For macro to return multi-nodes
+    multinodes: { nodes: Node[] };
 };
 
 type NodeType = keyof NodeDatum;

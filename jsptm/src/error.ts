@@ -25,7 +25,7 @@ class InvalidSyntaxError extends Error {
 
 class MacroApplyError extends Error {
     constructor(node: Node, marcoCall: MacroCall, rawError: Error) {
-        super(`${marcoCall.name}(${marcoCall.args?.join()}) throw ${rawError} applying ${node.rawData}`);
+        super(`${marcoCall.name}(${marcoCall.arg}) throw ${rawError} applying ${node.rawData}`);
         this.name = "Macro Apply Error";
     }
 }

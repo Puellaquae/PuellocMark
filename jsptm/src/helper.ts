@@ -3,7 +3,7 @@ function easyMap<M>(map: Map<string, unknown> = new Map()) {
     type Keys = Filter<keyof M, string>;
     return {
         map,
-        get<K extends Keys, V = M[K]>(key: K): V { return map.get(key) as V },
+        get<K extends Keys, V = M[K]>(key: K): V | undefined { return (map as Map<string, V>).get(key) },
         set<K extends Keys, V = M[K]>(key: K, value: V) { map.set(key, value) },
         has: (key: string) => map.has(key),
         forEach: (callbackfn: (value: unknown, key: string, map: Map<string, unknown>) => void, thisArg?: any) => map.forEach(callbackfn, thisArg),

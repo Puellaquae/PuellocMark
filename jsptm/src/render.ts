@@ -81,6 +81,8 @@ function node2html(node: Node): string {
             return `<h${node.data.level}>${content()}</h${node.data.level}>`;
         case "void":
             return "";
+        case "multinodes":
+            return node.data.nodes.map(n => node2html(n)).join("");
         default:
             throw `unknown node ${node}`;
     }

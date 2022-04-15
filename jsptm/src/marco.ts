@@ -4,19 +4,19 @@ import { MacroApplyError } from "./error";
 
 interface Macro {
     filter: NodeType[],
-    func: (node: Node, metadata: Ptm["metadata"], args?: string[]) => Node
+    func: (node: Node, metadata: Ptm["metadata"], arg?: string) => Node
 }
 
 type MacroCall = {
     name: string,
-    args?: string[]
+    arg?: string
 }
 
 function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall, macros: { [key: string]: Macro }): Node {
     const macro = macros[macroCall.name];
     if (macro && (macro.filter.length === 0 || macro.filter.indexOf(node.type) !== -1)) {
         try {
-            return macro.func(node, metadata, macroCall.args);
+            return macro.func(node, metadata, macroCall.arg);
         } catch (e) {
             if (e instanceof Error) {
                 throw new MacroApplyError(node, macroCall, e);

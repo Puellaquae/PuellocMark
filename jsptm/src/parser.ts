@@ -534,7 +534,7 @@ function parseMacroCall(data: Peek): MacroCall[] {
                 data.next(cap[0].length);
                 macros.push({
                     name: cap[1],
-                    args: cap[3]?.split(",") ?? []
+                    arg: cap[3]
                 })
             } else {
                 break;
