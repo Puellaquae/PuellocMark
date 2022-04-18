@@ -1,10 +1,10 @@
 import { Ptm } from ".";
-import { Node, NodeType } from "./ast";
+import { Node, NodeData, NodeType } from "./ast";
 import { MacroApplyError } from "./error";
 
 interface Macro {
     filter: NodeType[],
-    func: (node: Node, metadata: Ptm["metadata"], arg?: string) => Node
+    func: (node: Node, metadata: Ptm["metadata"], arg?: string) => NodeData
 }
 
 type MacroCall = {
@@ -16,7 +16,14 @@ function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall,
     const macro = macros[macroCall.name];
     if (macro && (macro.filter.length === 0 || macro.filter.indexOf(node.type) !== -1)) {
         try {
-            return macro.func(node, metadata, macroCall.arg);
+            const nodedata = macro.func(node, metadata, macroCall.arg);
+            return {
+                type: nodedata.type,
+                data: nodedata.data,
+                macros: node.macros,
+                children: node.children,
+                rawData: node.rawData
+            } as Node;
         } catch (e) {
             if (e instanceof Error) {
                 throw new MacroApplyError(node, macroCall, e);

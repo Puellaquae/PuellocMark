@@ -38,10 +38,13 @@ type NodeType = keyof NodeDatum;
 // https://stackoverflow.com/questions/51691235/typescript-map-union-type-to-another-union-type
 type Distribute<U> = U extends NodeType ? { type: U, data: NodeDatum[U] } : never;
 
+type NodeData = Distribute<NodeType>;
+
 type Node = {
     macros: MacroCall[],
     children: Node[],
     rawData: string
-} & Distribute<NodeType>;
+} & NodeData;
 
-export { Node, NodeType }
+
+export { Node, NodeData, NodeType }

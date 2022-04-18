@@ -42,7 +42,7 @@ temp_targets = { cpu = 79.5, case = 72.0 }\n\
 
 describe("GlobalMacro", () => {
     it("no macro", () => { expect(f("").globalMacroCalls).toEqual([]) });
-    it("simple macro", () => { expect(f("<!M macroA>").globalMacroCalls).toEqual([{ name: "macroA", args: [] }]) });
-    it("simple macro with args", () => { expect(f("<!M macroA(aa,bb,12,13)>").globalMacroCalls).toEqual([{ name: "macroA", args: ["aa", "bb", "12", "13"] }]) });
-    it("multi macro", () => { expect(f("<!M macroA><!M macroB>\n<!M macroC>").globalMacroCalls).toEqual([{ name: "macroA", args: [] }, { name: "macroB", args: [] }, { name: "macroC", args: [] }]) });
+    it("simple macro", () => { expect(f("<!M macroA>").globalMacroCalls).toEqual([{ name: "macroA" }]) });
+    it("simple macro with args", () => { expect(f("<!M macroA(aa,bb,12,13)>").globalMacroCalls).toEqual([{ name: "macroA", arg: "aa,bb,12,13" }]) });
+    it("multi macro", () => { expect(f("<!M macroA><!M macroB>\n<!M macroC>").globalMacroCalls).toEqual([{ name: "macroA" }, { name: "macroB" }, { name: "macroC" }]) });
 });

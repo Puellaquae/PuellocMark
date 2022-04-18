@@ -1,6 +1,6 @@
-import { Node } from "./ast";
+import { Node, NodeData } from "./ast";
 import { easyMap } from "./helper";
-import { applyMacroRecursive, Macro, MacroCall } from "./marco";
+import { applyMacro, applyMacroRecursive, Macro, MacroCall } from "./marco";
 import { parseFull } from "./parser";
 import { node2html } from "./render";
 
@@ -15,9 +15,13 @@ class Ptm {
             this.nodes = nodes;
     }
 
-    applyMacro(macros: { [name: string]: Macro }, forceMacro: string[]) {
-        const gm: MacroCall[] = [...this.globalMacroCalls, ...forceMacro.map(name => ({ name }))];
+    applyMacro(macros: { [name: string]: Macro }, forceMacro: MacroCall[]) {
+        const gm: MacroCall[] = [...this.globalMacroCalls, ...forceMacro];
         this.nodes = this.nodes.map(n => applyMacroRecursive(n, this.metadata, gm, macros));
+    }
+
+    applyMacroTo(macros: { [name: string]: Macro }, macroCall: MacroCall, node: Node) {
+        return applyMacro(node, this.metadata, macroCall, macros);
     }
 
     render(out: "html") {
@@ -32,9 +36,9 @@ class Ptm {
     }
 };
 
-function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }, forceMacro: string[]): { metadata: {}, output: string } {
+function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }, forceMacro: MacroCall[]): { metadata: {}, output: string } {
     let ptm = parseFull(src);
-    const gm: MacroCall[] = [...ptm.globalMacroCalls, ...forceMacro.map(name => ({ name }))];
+    const gm: MacroCall[] = [...ptm.globalMacroCalls, ...forceMacro];
     ptm.nodes = ptm.nodes.map(n => applyMacroRecursive(n, ptm.metadata, gm, macros));
     let output;
     switch (out) {
@@ -48,4 +52,4 @@ function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }
     };
 }
 
-export { puellocMark, Ptm, Macro, Node, easyMap };
+export { puellocMark, Ptm, Macro, Node, NodeData, easyMap };
