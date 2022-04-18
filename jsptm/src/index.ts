@@ -1,4 +1,4 @@
-import { Node, NodeData } from "./ast";
+import { Node, NodeData, NodeType } from "./ast";
 import { easyMap } from "./helper";
 import { applyMacro, applyMacroRecursive, Macro, MacroCall } from "./marco";
 import { parseFull } from "./parser";
@@ -20,8 +20,8 @@ class Ptm {
         this.nodes = this.nodes.map(n => applyMacroRecursive(n, this.metadata, gm, macros));
     }
 
-    applyMacroTo(macros: { [name: string]: Macro }, macroCall: MacroCall, node: Node) {
-        return applyMacro(node, this.metadata, macroCall, macros);
+    static applyMacroTo(macros: { [name: string]: Macro }, macroCall: MacroCall, metadata: Map<string, unknown>, node: Node) {
+        return applyMacro(node, metadata, macroCall, macros);
     }
 
     render(out: "html") {
@@ -52,4 +52,4 @@ function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }
     };
 }
 
-export { puellocMark, Ptm, Macro, Node, NodeData, easyMap };
+export { puellocMark, Ptm, Macro, MacroCall, Node, NodeData, NodeType, easyMap };

@@ -30,7 +30,7 @@ type NodeDatum = {
     // For macro to return nothing
     void: null,
     // For macro to return multi-nodes
-    multinodes: { nodes: Node[] };
+    multinodes: { nodes: NodeData[] };
 };
 
 type NodeType = keyof NodeDatum;
@@ -40,11 +40,12 @@ type Distribute<U> = U extends NodeType ? { type: U, data: NodeDatum[U] } : neve
 
 type NodeData = Distribute<NodeType>;
 
-type Node = {
+type NodeBase = {
     macros: MacroCall[],
     children: Node[],
     rawData: string
-} & NodeData;
+};
 
+type Node = NodeBase & NodeData;
 
 export { Node, NodeData, NodeType }

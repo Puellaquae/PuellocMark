@@ -18,12 +18,11 @@ function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall,
         try {
             const nodedata = macro.func(node, metadata, macroCall.arg);
             return {
-                type: nodedata.type,
-                data: nodedata.data,
+                ...nodedata,
                 macros: node.macros,
                 children: node.children,
                 rawData: node.rawData
-            } as Node;
+            };
         } catch (e) {
             if (e instanceof Error) {
                 throw new MacroApplyError(node, macroCall, e);

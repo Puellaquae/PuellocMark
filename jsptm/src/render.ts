@@ -82,7 +82,7 @@ function node2html(node: Node): string {
         case "void":
             return "";
         case "multinodes":
-            return node.data.nodes.map(n => node2html(n)).join("");
+            return node.data.nodes.map(n => node2html({ ...n, macros: [], children: [], rawData: "" })).join("");
         default:
             throw `unknown node ${node}`;
     }
