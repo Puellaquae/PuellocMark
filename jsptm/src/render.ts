@@ -1,4 +1,5 @@
 import { Node } from "./ast";
+import { UnreachableError } from "./error";
 
 function node2html(node: Node): string {
     const content = () => node.children.map(n => node2html(n)).join("");
@@ -82,9 +83,11 @@ function node2html(node: Node): string {
         case "void":
             return "";
         case "multinodes":
-            return node.data.nodes.map(n => node2html({ ...n, macros: [], children: [], rawData: "" })).join("");
+            return node.data.nodes.map(n => node2html({ ...n, macros: node.macros, children: node.children, rawData: node.rawData })).join("");
+        case "forknodes":
+            throw new UnreachableError("forknodes should not appeared in rendering");
         default:
-            throw `unknown node ${node}`;
+            throw new UnreachableError(`unknown node ${node}`);
     }
 }
 

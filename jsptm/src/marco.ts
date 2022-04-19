@@ -4,7 +4,11 @@ import { MacroApplyError } from "./error";
 
 interface Macro {
     filter: NodeType[],
-    func: (node: Node, metadata: Ptm["metadata"], arg?: string) => NodeData
+    func: (
+        node: Node,
+        metadata: Ptm["metadata"],
+        arg: string,
+    ) => NodeData | null;
 }
 
 type MacroCall = {
@@ -16,13 +20,17 @@ function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall,
     const macro = macros[macroCall.name];
     if (macro && (macro.filter.length === 0 || macro.filter.indexOf(node.type) !== -1)) {
         try {
-            const nodedata = macro.func(node, metadata, macroCall.arg);
-            return {
-                ...nodedata,
-                macros: node.macros,
-                children: node.children,
-                rawData: node.rawData
-            };
+            const nodedata = macro.func(node, metadata, macroCall.arg ?? "");
+            if (nodedata !== null) {
+                return {
+                    ...nodedata,
+                    macros: node.macros,
+                    children: node.children,
+                    rawData: node.rawData
+                };
+            } else {
+                return node;
+            }
         } catch (e) {
             if (e instanceof Error) {
                 throw new MacroApplyError(node, macroCall, e);
@@ -37,10 +45,29 @@ function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall,
 
 function applyMacroRecursive(node: Node, metadata: Ptm["metadata"], globalMacroCall: MacroCall[], macros: { [key: string]: Macro }): Node {
     node.children = node.children.map(c => applyMacroRecursive(c, metadata, globalMacroCall, macros));
+    let nodes = [node];
     for (const macroCall of [...node.macros, ...globalMacroCall]) {
-        node = applyMacro(node, metadata, macroCall, macros);
+        nodes = nodes.flatMap(n => [...flattenNodes(applyMacro(n, metadata, macroCall, macros))]);
     }
-    return node;
+    return {
+        type: "multinodes",
+        data: {
+            nodes
+        },
+        macros: node.macros,
+        children: node.children,
+        rawData: node.rawData
+    };
 }
 
-export { Macro, MacroCall, applyMacro, applyMacroRecursive }
+function* flattenNodes(...nodeArr: Node[]): Generator<Node, void, void> {
+    for (const node of nodeArr) {
+        if (node.type === "forknodes") {
+            yield* flattenNodes(...node.data.nodes.map(d => ({ ...d, macros: node.macros, children: node.children, rawData: node.rawData })));
+        } else {
+            yield node;
+        }
+    }
+}
+
+export { Macro, MacroCall, applyMacroRecursive }

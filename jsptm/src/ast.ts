@@ -31,6 +31,10 @@ type NodeDatum = {
     void: null,
     // For macro to return multi-nodes
     multinodes: { nodes: NodeData[] };
+    // For macro to return multi-nodes, but this will be flatten into each nodes and continue apply macro to all.
+    // So this should not appeared in rendering.
+    // And it will be pack up into multinodes in applyMacroRecursive
+    forknodes: { nodes: NodeData[] };
 };
 
 type NodeType = keyof NodeDatum;

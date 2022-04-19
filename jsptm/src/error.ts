@@ -3,8 +3,8 @@ import { MacroCall } from "./marco";
 import { Peek } from "./parser";
 
 class UnreachableError extends Error {
-    constructor() {
-        super("Got into a unreachable branch");
+    constructor(message?: string) {
+        super(`Internal Error. ${message}`);
         this.name = "Unreachable Error";
     }
 }

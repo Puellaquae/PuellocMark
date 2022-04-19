@@ -1,6 +1,6 @@
 import { Node, NodeData, NodeType } from "./ast";
 import { easyMap } from "./helper";
-import { applyMacro, applyMacroRecursive, Macro, MacroCall } from "./marco";
+import { applyMacroRecursive, Macro, MacroCall } from "./marco";
 import { parseFull } from "./parser";
 import { node2html } from "./render";
 
@@ -18,10 +18,6 @@ class Ptm {
     applyMacro(macros: { [name: string]: Macro }, forceMacro: MacroCall[]) {
         const gm: MacroCall[] = [...this.globalMacroCalls, ...forceMacro];
         this.nodes = this.nodes.map(n => applyMacroRecursive(n, this.metadata, gm, macros));
-    }
-
-    static applyMacroTo(macros: { [name: string]: Macro }, macroCall: MacroCall, metadata: Map<string, unknown>, node: Node) {
-        return applyMacro(node, metadata, macroCall, macros);
     }
 
     render(out: "html") {
