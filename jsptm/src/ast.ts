@@ -46,10 +46,13 @@ type NodeData = Distribute<NodeType>;
 
 type NodeBase = {
     macros: MacroCall[],
-    children: Node[],
     rawData: string
 };
 
-type Node = NodeBase & NodeData;
+type NodeChildren = {
+    children: Node[],
+}
 
-export { Node, NodeData, NodeType }
+type Node = NodeBase & NodeData & NodeChildren;
+
+export { Node, NodeData, NodeType, NodeBase };

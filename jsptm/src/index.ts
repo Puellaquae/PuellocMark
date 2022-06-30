@@ -1,4 +1,5 @@
 import { Node, NodeData, NodeType } from "./ast";
+import { CacheData, applyCache, startWatchEffect, getNewMacroUsedMetadata, getNewCacheData } from "./cache";
 import { easyMap } from "./helper";
 import { applyMacroRecursive, Macro, MacroCall } from "./marco";
 import { parseFull } from "./parser";
@@ -18,6 +19,15 @@ class Ptm {
     applyMacro(macros: { [name: string]: Macro }, forceMacro: MacroCall[]) {
         const gm: MacroCall[] = [...this.globalMacroCalls, ...forceMacro];
         this.nodes = this.nodes.map(n => applyMacroRecursive(n, this.metadata, gm, macros));
+    }
+
+    applyMacroWithCache(macros: { [name: string]: Macro }, forceMacro: MacroCall[], lastCache: CacheData): CacheData {
+        const gm: MacroCall[] = [...this.globalMacroCalls, ...forceMacro];
+        const nodes = applyCache(this, lastCache);
+        const [ metadata, macrosProxy, recorder ] = startWatchEffect(this.metadata, macros);
+        this.nodes = nodes.map(n => applyMacroRecursive(n, metadata, gm, macrosProxy));
+        const macroUsedMetadata = getNewMacroUsedMetadata(lastCache.macroUsedMetadata, recorder);
+        return getNewCacheData(lastCache, this, macroUsedMetadata);
     }
 
     render(out: "html") {

@@ -30,4 +30,17 @@ class MacroApplyError extends Error {
     }
 }
 
-export { UnreachableError, UnexpectedContentError, InvalidSyntaxError, MacroApplyError }
+class UnimplementedError extends Error {
+    constructor(funcName: string) {
+        super(`${funcName} is unimplemented`);
+        this.name = "Unimplemented Error";
+    }
+}
+
+export { 
+    UnreachableError, 
+    UnexpectedContentError, 
+    InvalidSyntaxError, 
+    MacroApplyError, 
+    UnimplementedError
+};

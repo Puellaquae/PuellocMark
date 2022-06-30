@@ -680,4 +680,4 @@ function parseImage(data: Peek): Node {
     };
 }
 
-export { parseSingle, parseFull, Peek }
+export { parseSingle, parseFull, Peek };

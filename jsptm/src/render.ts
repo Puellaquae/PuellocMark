@@ -91,4 +91,4 @@ function node2html(node: Node): string {
     }
 }
 
-export { node2html }
+export { node2html };

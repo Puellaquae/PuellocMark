@@ -1,5 +1,6 @@
 import { Ptm } from ".";
 import { Node, NodeData, NodeType } from "./ast";
+import { CacheData } from "./cache";
 import { MacroApplyError } from "./error";
 
 interface Macro {
@@ -70,4 +71,4 @@ function* flattenNodes(...nodeArr: Node[]): Generator<Node, void, void> {
     }
 }
 
-export { Macro, MacroCall, applyMacroRecursive }
+export { Macro, MacroCall, applyMacroRecursive };
