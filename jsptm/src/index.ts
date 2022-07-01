@@ -1,6 +1,6 @@
 import { Node, NodeData, NodeType } from "./ast";
-import { CacheData, applyCache, startWatchEffect, getNewMacroUsedMetadata, getNewCacheData } from "./cache";
-import { easyMap } from "./helper";
+import { CacheData, startWatchEffect, getNewCacheData, cacheDataToJson, jsonToCacheData } from "./cache";
+import { DeepReadonly, easyMap } from "./helper";
 import { applyMacroRecursive, Macro, MacroCall } from "./marco";
 import { parseFull } from "./parser";
 import { node2html } from "./render";
@@ -23,11 +23,9 @@ class Ptm {
 
     applyMacroWithCache(macros: { [name: string]: Macro }, forceMacro: MacroCall[], lastCache: CacheData): CacheData {
         const gm: MacroCall[] = [...this.globalMacroCalls, ...forceMacro];
-        const nodes = applyCache(this, lastCache);
-        const [ metadata, macrosProxy, recorder ] = startWatchEffect(this.metadata, macros);
-        this.nodes = nodes.map(n => applyMacroRecursive(n, metadata, gm, macrosProxy));
-        const macroUsedMetadata = getNewMacroUsedMetadata(lastCache.macroUsedMetadata, recorder);
-        return getNewCacheData(lastCache, this, macroUsedMetadata);
+        const [metadata, macrosProxy, recorder] = startWatchEffect(this.metadata, macros, lastCache);
+        this.nodes = this.nodes.map(n => applyMacroRecursive(n, metadata, gm, macrosProxy));
+        return getNewCacheData(recorder);
     }
 
     render(out: "html") {
@@ -58,4 +56,17 @@ function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }
     };
 }
 
-export { puellocMark, Ptm, Macro, MacroCall, Node, NodeData, NodeType, easyMap };
+export {
+    puellocMark,
+    Ptm,
+    Macro,
+    MacroCall,
+    Node,
+    NodeData,
+    NodeType,
+    easyMap,
+    CacheData,
+    cacheDataToJson,
+    jsonToCacheData,
+    DeepReadonly
+};
