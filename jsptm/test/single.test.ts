@@ -56,6 +56,7 @@ describe("List", () => {
 describe("Link", () => {
     it("1", () => { expect(p("[foo](bar)")).toBe('<p><a href="bar">foo</a></p>'); });
     it("2", () => { expect(p("[foo bar](bar foo)")).toBe('<p><a href="bar foo">foo bar</a></p>'); });
+    it("3", () => { expect(p("[foo **bar**](bar foo)")).toBe('<p><a href="bar foo">foo <strong>bar<strong></a></p>'); });
 });
 
 describe("Image", () => {
