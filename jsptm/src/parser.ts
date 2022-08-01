@@ -63,7 +63,7 @@ function splitBlock(src: string): string[] {
                     waitfor = "\n--->";
                 }
             } else if (rawb.split("\n").some(l => l.startsWith("```"))) {
-                let cap = /^`{3}/.exec(rawb.split("\n").filter(l => l.startsWith("```"))[0]);
+                let cap = /^`{3,}/.exec(rawb.split("\n").filter(l => l.startsWith("```"))[0]);
                 if (!cap) {
                     throw new UnreachableError();
                 }
@@ -643,7 +643,7 @@ function parseInlineCode(data: Peek): Node {
         }
     }
 
-    throw new InvalidSyntaxError("inlineCode",data , `not found inline code end ${fence}`);
+    throw new InvalidSyntaxError("inlineCode", data, `not found inline code end ${fence}`);
 }
 
 function parseLink(data: Peek): Node {
