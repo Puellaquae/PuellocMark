@@ -227,6 +227,6 @@ Link = "[" LinkName "]" "(" Url ")"
 
 Image = "![" ImageAlt "]" "(" Url ")"
 
-Del = "~" InlineBlock { InlineBlock } "~"
+Del = "~" InlineBlocks "~"
 
 ```
