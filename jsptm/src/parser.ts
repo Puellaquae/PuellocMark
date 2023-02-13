@@ -494,7 +494,7 @@ function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***"): Node[] {
                 break;
             }
             case "\\": {
-                if (Regexs.escape.test(data.peek(1))) {
+                if (Regexs.escape.test(data.peek(0, 2))) {
                     textBuf.push(data.peek(1));
                     rawData.push(data.peek(0, 2));
                     data.next(2);

@@ -49,6 +49,9 @@ function applyMacroRecursive(node: Node, metadata: Ptm["metadata"], globalMacroC
     for (const macroCall of [...node.macros, ...globalMacroCall]) {
         nodes = nodes.flatMap(n => [...flattenNodes(applyMacro(n, metadata, macroCall, macros))]);
     }
+    if (nodes.length === 1) {
+        return nodes[0];
+    }
     return {
         type: "multinodes",
         data: {
