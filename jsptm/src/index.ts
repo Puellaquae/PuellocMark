@@ -16,15 +16,15 @@ class Ptm {
             this.nodes = nodes;
     }
 
-    applyMacro(macros: { [name: string]: Macro }, forceMacro: MacroCall[]) {
+    async applyMacro(macros: { [name: string]: Macro }, forceMacro: MacroCall[]) {
         const gm: MacroCall[] = [...this.globalMacroCalls, ...forceMacro];
-        this.nodes = this.nodes.map(n => applyMacroRecursive(n, this.metadata, gm, macros));
+        this.nodes = await Promise.all(this.nodes.map(n => applyMacroRecursive(n, this.metadata, gm, macros)));
     }
 
-    applyMacroWithCache(macros: { [name: string]: Macro }, forceMacro: MacroCall[], lastCache: CacheData): CacheData {
+    async applyMacroWithCache(macros: { [name: string]: Macro }, forceMacro: MacroCall[], lastCache: CacheData): Promise<CacheData> {
         const gm: MacroCall[] = [...this.globalMacroCalls, ...forceMacro];
         const [metadata, macrosProxy, recorder] = startWatchEffect(this.metadata, macros, lastCache);
-        this.nodes = this.nodes.map(n => applyMacroRecursive(n, metadata, gm, macrosProxy));
+        this.nodes = await Promise.all(this.nodes.map(n => applyMacroRecursive(n, metadata, gm, macrosProxy)));
         return getNewCacheData(recorder);
     }
 
@@ -40,10 +40,10 @@ class Ptm {
     }
 };
 
-function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }, forceMacro: MacroCall[]): { metadata: {}, output: string } {
+async function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }, forceMacro: MacroCall[]): Promise<{ metadata: {}; output: string; }> {
     let ptm = parseFull(src);
     const gm: MacroCall[] = [...ptm.globalMacroCalls, ...forceMacro];
-    ptm.nodes = ptm.nodes.map(n => applyMacroRecursive(n, ptm.metadata, gm, macros));
+    ptm.nodes = await Promise.all(ptm.nodes.map(n => applyMacroRecursive(n, ptm.metadata, gm, macros)));
     let output;
     switch (out) {
         case "html":

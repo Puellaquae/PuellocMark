@@ -8,7 +8,7 @@ interface Macro {
         node: Node,
         metadata: Ptm["metadata"],
         arg: string,
-    ) => NodeData | null;
+    ) => Promise<NodeData | null> | (NodeData | null);
 }
 
 type MacroCall = {
@@ -16,11 +16,11 @@ type MacroCall = {
     arg?: string
 }
 
-function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall, macros: { [key: string]: Macro }): Node {
+async function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall, macros: { [key: string]: Macro }): Promise<Node> {
     const macro = macros[macroCall.name];
     if (macro && (macro.filter.length === 0 || macro.filter.indexOf(node.type) !== -1)) {
         try {
-            const nodedata = macro.func(node, metadata, macroCall.arg ?? "");
+            const nodedata = await macro.func(node, metadata, macroCall.arg ?? "");
             if (nodedata !== null) {
                 return {
                     ...nodedata,
@@ -43,11 +43,11 @@ function applyMacro(node: Node, metadata: Ptm["metadata"], macroCall: MacroCall,
     }
 }
 
-function applyMacroRecursive(node: Node, metadata: Ptm["metadata"], globalMacroCall: MacroCall[], macros: { [key: string]: Macro }): Node {
-    node.children = node.children.map(c => applyMacroRecursive(c, metadata, globalMacroCall, macros));
+async function applyMacroRecursive(node: Node, metadata: Ptm["metadata"], globalMacroCall: MacroCall[], macros: { [key: string]: Macro }): Promise<Node> {
+    node.children = (await Promise.all(node.children.map(async c => await applyMacroRecursive(c, metadata, globalMacroCall, macros)))).flat();
     let nodes = [node];
     for (const macroCall of [...node.macros, ...globalMacroCall]) {
-        nodes = nodes.flatMap(n => [...flattenNodes(applyMacro(n, metadata, macroCall, macros))]);
+        nodes = (await Promise.all(nodes.map(async n => [...flattenNodes(await applyMacro(n, metadata, macroCall, macros))]))).flat();
     }
     if (nodes.length === 1) {
         return nodes[0];

@@ -120,18 +120,18 @@ function startWatchEffect(
                 return new Proxy(macro, {
                     get(target, prop, r2) {
                         if (prop === "func") {
-                            return (
+                            return async (
                                 node: Node,
                                 metadata: Ptm["metadata"],
                                 arg: string,
-                            ): NodeData | null => {
+                            ): Promise<NodeData | null> => {
                                 const hash = macroApplyHash(target, node, arg);
                                 recorder.currentMacroHash = hash;
                                 let res: NodeData | null;
                                 if (changedMacro.includes(macroName)) {
-                                    res = target.func(node, metadata, arg);
+                                    res = await target.func(node, metadata, arg);
                                 } else if (!lastCache.lastMacroApply.has(hash)) {
-                                    res = target.func(node, metadata, arg);
+                                    res = await target.func(node, metadata, arg);
                                 } else {
                                     const lastApplyBehavior = lastCache.lastMacroApply.get(hash)!!;
                                     const lastMetadataAccess = lastApplyBehavior.metadataAccess || [];
@@ -139,7 +139,7 @@ function startWatchEffect(
                                         a => a.access === "read" && metadata.get(a.key) !== a.value
                                     );
                                     if (metadataChanged) {
-                                        res = target.func(node, metadata, arg);
+                                        res = await target.func(node, metadata, arg);
                                     } else {
                                         res = lastApplyBehavior.gen;
                                         lastMetadataAccess.forEach(a => {
