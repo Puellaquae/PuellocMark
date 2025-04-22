@@ -99,3 +99,10 @@ it("empty", () =&gt; {\n\
     expect(p("```\n```")).toBe(\'&lt;pre&gt;&lt;code lang=""&gt;&lt;/code&gt;&lt;/pre&gt;\')\n\
 });</code></pre>')});
 })
+
+describe("Span", () => {
+    it("empty", () => {expect(p("<span></span>")).toBe("<p><span></span></p>")})
+    it("some attrs", () => {expect(p("<span key1=val key2=\"222\"  key3='3333'>ccc</span>")).toBe("<p><span key1=\"val\" key2=\"222\" key3=\"3333\">ccc</span></p>")})
+    it("mix", () => {expect(p("<span key1=val key2=\"222\"  key3='3333'>bbb**ccc**</span>")).toBe("<p><span key1=\"val\" key2=\"222\" key3=\"3333\">bbb<strong>ccc</strong></span></p>")})
+    it("mix2", () => {expect(p("# <span k=v>ccc</span>")).toBe("<h1><span k=\"v\">ccc</span></h1>")})
+})

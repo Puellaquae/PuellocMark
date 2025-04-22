@@ -26,7 +26,7 @@ type NodeDatum = {
     listItem: null,
     // HTML can only be created by parser
     rawHtml: { html: string },
-    htmlTag: { tag: string, attr: string[] },
+    htmlTag: { tag: string, attr: { key: string, val: string }[] },
     // For macro to return nothing
     void: null,
     // For macro to return multi-nodes

@@ -1,2 +1,0 @@
-import { Ptm } from "../src";
-

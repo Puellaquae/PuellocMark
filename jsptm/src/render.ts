@@ -15,7 +15,12 @@ function node2html(node: Node): string {
         case "rawHtml":
             return node.data.html;
         case "htmlTag":
-            return `<${node.data.tag} ${node.data.attr.join(" ")}>${content}</${node.data.tag}>`
+            if (node.data.attr.length === 0) {
+                return `<${node.data.tag}>${content()}</${node.data.tag}>`
+            } else {
+                const attrs = node.data.attr.map(({ key, val }) => key + "=\"" + val + "\"").join(" ");
+                return `<${node.data.tag} ${attrs}>${content()}</${node.data.tag}>`
+            }
         case "image":
             return `<img alt="${node.data.alt}" src="${node.data.url}"/>`;
         case "inlineCode":

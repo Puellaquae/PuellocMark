@@ -391,7 +391,7 @@ function parseTable(data: Peek): Node {
     }
 }
 
-function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***"): Node[] {
+function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***" | "</span>"): Node[] {
     let nodes: Node[] = [];
     let textBuf: string[] = [];
     let rawData: string[] = [];
@@ -425,6 +425,9 @@ function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***"): Node[] {
             (waitsign === "**" && data.peek(0, 2) === "**") ||
             (waitsign === "***" && data.peek(0, 1) === "*")
         )) {
+            pushText();
+            return nodes;
+        } else if (waitsign === "</span>" && data.peek(0, 7) === "</span>") {
             pushText();
             return nodes;
         }
@@ -486,6 +489,10 @@ function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***"): Node[] {
                 if (data.peek(0, 4) === "<!M ") {
                     pushText();
                     lastMacro = parseMacroCall(data);
+                } else if (data.peek(0, 5) === "<span") {
+                    data.next(5);
+                    pushText();
+                    pushNode(parseSpan(data));
                 } else {
                     textBuf.push("<");
                     rawData.push("<");
@@ -613,6 +620,49 @@ function parseEmphasisAndStrong(data: Peek): Node {
     } else {
         throw new InvalidSyntaxError("emphasis", data, "not found em&strong end");
     }
+}
+
+function trimAny(str: string, chars: string[]) {
+    var start = 0,
+        end = str.length;
+
+    while (start < end && chars.indexOf(str[start]) >= 0)
+        ++start;
+
+    while (end > start && chars.indexOf(str[end - 1]) >= 0)
+        --end;
+
+    return (start > 0 || end < str.length) ? str.substring(start, end) : str;
+}
+
+function parseSpan(data: Peek): Node {
+    let attrstr: string[] = [];
+    while (!data.end() && data.peek() !== ">") {
+        attrstr.push(data.peek());
+        data.next();
+    }
+    if (data.end() || data.peek() !== ">") {
+        throw new InvalidSyntaxError("htmlTag", data, "span not closed");
+    }
+    data.next();
+    const attrs = attrstr.join("").trim().split(" ");
+    let attrlist = attrs.map((attr) => attr.trim())
+        .filter((attr) => attr.length > 0)
+        .map((attr) => attr.split("="))
+        .filter((kv) => kv.length === 2)
+        .map(([key, val]) => ({ key, val: trimAny(val, ["\"", "'"]) }));
+    const nodes = parseInlineBlocks(data, "</span>");
+    data.next(7);
+    return {
+        type: "htmlTag",
+        data: {
+            tag: "span",
+            attr: attrlist,
+        },
+        macros: [],
+        children: nodes,
+        rawData: "<span" + attrstr.join() + ">" + nodes.map(n => n.rawData).join("") + "</span>"
+    };
 }
 
 function parseInlineCode(data: Peek): Node {
