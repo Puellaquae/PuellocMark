@@ -11,7 +11,7 @@ function node2html(node: Node): string {
         case "emphasis":
             return `<em>${content()}</em>`;
         case "fenceCode":
-            return `<pre><code lang="${node.data.codetype}">${node.data.code.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code></pre>`;
+            return `<pre><code class='codeblock' lang="${node.data.codetype}">${node.data.code.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code></pre>`;
         case "rawHtml":
             return node.data.html;
         case "htmlTag":
@@ -24,7 +24,7 @@ function node2html(node: Node): string {
         case "image":
             return `<img alt="${node.data.alt}" src="${node.data.url}"/>`;
         case "inlineCode":
-            return `<code>${node.data.code.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code>`;
+            return `<code class='inlinecode'>${node.data.code.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code>`;
         case "link":
             return `<a href="${node.data.url}">${node.data.name}</a>`;
         case "list":

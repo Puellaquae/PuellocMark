@@ -177,18 +177,19 @@ function parseRootBlock(src: string): Node {
 function parseQuote(data: Peek): Node {
     const rawData = data.rest();
     data.next(rawData.length);
-    const inner = parseRootBlock(rawData.split("\n").map(l => {
+    const innerDoc = rawData.split("\n").map(l => {
         if (!l.startsWith("> ")) {
             throw new InvalidSyntaxError("quote", data, "every line in quote should startwith > ");
         }
         return l.substring(2)
-    }).join("\n"));
+    }).join("\n");
+    const inners = splitBlock(innerDoc).map(parseRootBlock);
     return {
         type: "quote",
         data: null,
         macros: [],
         rawData,
-        children: [inner]
+        children: inners
     };
 }
 
