@@ -1,8 +1,8 @@
-import { parseSingle } from "../src/parser";
+import { DEFAULT_PTM_PARSE_OPT, parseSingle, PtmParseOpt } from "../src/parser";
 import { node2html } from "../src/render";
 
-function p(ptm: string): string {
-    return node2html(parseSingle(ptm));
+function p(ptm: string, opt?: PtmParseOpt): string {
+    return node2html(parseSingle(ptm, opt ?? DEFAULT_PTM_PARSE_OPT));
 }
 
 describe("Emphasis", () => {
@@ -80,21 +80,21 @@ describe("Table", () => {
 });
 
 describe("InlineCode", () => {
-    it("empty", () => {expect(p("` `")).toBe("<p><code></code></p>")})
-    it("double sign", () => {expect(p("`` ` ``")).toBe("<p><code>`</code></p>")})
-    it("code", () => {expect(p("``abcc<  >cbaa``")).toBe("<p><code>abcc&lt;  &gt;cbaa</code></p>")})
-    it("near", () => {expect(p("`aa``bb`")).toBe("<p><code>aa</code><code>bb</code></p>")})
+    it("empty", () => {expect(p("` `")).toBe("<p><code class='inlinecode'></code></p>")})
+    it("double sign", () => {expect(p("`` ` ``")).toBe("<p><code class='inlinecode'>`</code></p>")})
+    it("code", () => {expect(p("``abcc<  >cbaa``")).toBe("<p><code class='inlinecode'>abcc&lt;  &gt;cbaa</code></p>")})
+    it("near", () => {expect(p("`aa``bb`")).toBe("<p><code class='inlinecode'>aa</code><code class='inlinecode'>bb</code></p>")})
 })
 
 describe("FenceCode", () => {
-    it("empty", () => {expect(p("```\n```")).toBe('<pre><code lang=""></code></pre>')});
+    it("empty", () => {expect(p("```\n```")).toBe('<pre><code class=\'codeblock\' lang=""></code></pre>')});
     it("simple", () => {expect(p(
 '```js\n\
 it("empty", () => {\n\
     expect(p("```\n```")).toBe(\'<pre><code lang=""></code></pre>\')\n\
 });\n\
 ```'
-    )).toBe('<pre><code lang="js">\
+    )).toBe('<pre><code class=\'codeblock\' lang="js">\
 it("empty", () =&gt; {\n\
     expect(p("```\n```")).toBe(\'&lt;pre&gt;&lt;code lang=""&gt;&lt;/code&gt;&lt;/pre&gt;\')\n\
 });</code></pre>')});
@@ -105,4 +105,9 @@ describe("Span", () => {
     it("some attrs", () => {expect(p("<span key1=val key2=\"222\"  key3='3333'>ccc</span>")).toBe("<p><span key1=\"val\" key2=\"222\" key3=\"3333\">ccc</span></p>")})
     it("mix", () => {expect(p("<span key1=val key2=\"222\"  key3='3333'>bbb**ccc**</span>")).toBe("<p><span key1=\"val\" key2=\"222\" key3=\"3333\">bbb<strong>ccc</strong></span></p>")})
     it("mix2", () => {expect(p("# <span k=v>ccc</span>")).toBe("<h1><span k=\"v\">ccc</span></h1>")})
+})
+
+describe("Ruby", () => {
+    it("empty", () => {expect(p("<ruby> 明 日 <rp>(</rp><rt>ming ri</rt><rp>)</rp></ruby>")).toBe("<p><ruby> 明 日 <rp>(</rp><rt>ming ri</rt><rp>)</rp></ruby></p>")})
+    it("empty", () => {expect(parseSingle("<ruby> 明 日 <rp>(</rp><rt>ming ri</rt><rp>)</rp></ruby>", DEFAULT_PTM_PARSE_OPT).children[0].type).toBe("htmlTag")})
 })

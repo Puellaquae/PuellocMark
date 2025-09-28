@@ -2,7 +2,7 @@ import { Node, NodeData, NodeType } from "./ast";
 import { CacheData, startWatchEffect, getNewCacheData, cacheDataToJson, jsonToCacheData } from "./cache";
 import { DeepReadonly, easyMap } from "./helper";
 import { applyMacroRecursive, Macro, MacroCall } from "./marco";
-import { parseFull } from "./parser";
+import { parseFull, PtmParseOpt } from "./parser";
 import { node2html } from "./render";
 
 class Ptm {
@@ -35,13 +35,13 @@ class Ptm {
         }
     }
 
-    static parse(src: string): Ptm {
-        return parseFull(src);
+    static parse(src: string, opt?: PtmParseOpt): Ptm {
+        return parseFull(src, opt);
     }
 };
 
-async function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }, forceMacro: MacroCall[]): Promise<{ metadata: {}; output: string; }> {
-    let ptm = parseFull(src);
+async function puellocMark(src: string, out: "html", macros: { [name: string]: Macro }, forceMacro: MacroCall[], opt?: PtmParseOpt): Promise<{ metadata: {}; output: string; }> {
+    let ptm = parseFull(src, opt);
     const gm: MacroCall[] = [...ptm.globalMacroCalls, ...forceMacro];
     ptm.nodes = await Promise.all(ptm.nodes.map(n => applyMacroRecursive(n, ptm.metadata, gm, macros)));
     let output;
@@ -68,5 +68,6 @@ export {
     CacheData,
     cacheDataToJson,
     jsonToCacheData,
-    DeepReadonly
+    DeepReadonly,
+    PtmParseOpt
 };

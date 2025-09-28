@@ -5,6 +5,14 @@ import { InvalidSyntaxError, UnexpectedContentError, UnreachableError } from './
 import { MacroCall } from './marco';
 import { Regexs } from './reg';
 
+type PtmParseOpt = {
+    allowedHtmlTags: string[]
+};
+
+const DEFAULT_PTM_PARSE_OPT: PtmParseOpt = {
+    allowedHtmlTags: ["span", "ruby", "rp", "rt"]
+};
+
 class Peek {
     content: string[];
     index: number = 0;
@@ -83,7 +91,10 @@ function splitBlock(src: string): string[] {
     return block.map(a => a.join("\n\n"));
 }
 
-function parseFull(ptm: string): Ptm {
+function parseFull(ptm: string, opt?: PtmParseOpt): Ptm {
+    let new_opt = opt ?? DEFAULT_PTM_PARSE_OPT;
+    new_opt.allowedHtmlTags = new_opt.allowedHtmlTags ?? DEFAULT_PTM_PARSE_OPT.allowedHtmlTags;
+
     const blocks = splitBlock(ptm.replaceAll("\r\n", "\n"));
     let idx = 0;
     let metadata: Ptm["metadata"] = new Map();
@@ -94,7 +105,7 @@ function parseFull(ptm: string): Ptm {
     if (idx < blocks.length && blocks[idx].split("\n").every(v => Regexs.rootMacrocall.test(v))) {
         blocks[idx++].split("\n").forEach(line => globalMacroCalls.push(...parseMacroCall(new Peek(line))));
     }
-    let nodes = blocks.splice(idx).map(parseRootBlock);
+    let nodes = blocks.splice(idx).map(b => parseRootBlock(b, new_opt));
     return new Ptm(
         metadata,
         globalMacroCalls,
@@ -107,11 +118,11 @@ function parseMetadata(src: string): object {
     return TOML.parse(toml, { bigint: false });
 }
 
-function parseSingle(src: string): Node {
-    return parseRootBlock(src.replaceAll(/\r\n/g, "\n"));
+function parseSingle(src: string, opt: PtmParseOpt): Node {
+    return parseRootBlock(src.replaceAll(/\r\n/g, "\n"), opt);
 }
 
-function parseRootBlock(src: string): Node {
+function parseRootBlock(src: string, opt: PtmParseOpt): Node {
     let macros: MacroCall[] = [];
     let node: Node;
     const lines = src.split("\n");
@@ -127,9 +138,9 @@ function parseRootBlock(src: string): Node {
     switch (data.peek()) {
         case ">":
             if (data.peek(0, 2) === "> ") {
-                node = parseQuote(data);
+                node = parseQuote(data, opt);
             } else {
-                node = parsePara(data);
+                node = parsePara(data, opt);
             }
             break;
         case "-":
@@ -140,31 +151,31 @@ function parseRootBlock(src: string): Node {
         case "+":
         case "*":
             if (data.peek(1) === " ") {
-                node = parseList(data);
+                node = parseList(data, opt);
             } else {
-                node = parsePara(data);
+                node = parsePara(data, opt);
             }
             break;
         case "#":
             if (Regexs.title.test(data.peek(0, 7))) {
-                node = parseTitle(data);
+                node = parseTitle(data, opt);
             }
             else {
-                node = parsePara(data);
+                node = parsePara(data, opt);
             }
             break;
         case "`":
             if (data.peek(0, 3) === "```") {
                 node = parseFenceCode(data);
             } else {
-                node = parsePara(data);
+                node = parsePara(data, opt);
             }
             break;
         case "|":
-            node = parseTable(data);
+            node = parseTable(data, opt);
             break;
         default:
-            node = parsePara(data);
+            node = parsePara(data, opt);
             break;
     }
     node.macros = macros;
@@ -174,7 +185,7 @@ function parseRootBlock(src: string): Node {
     return node;
 }
 
-function parseQuote(data: Peek): Node {
+function parseQuote(data: Peek, opt: PtmParseOpt): Node {
     const rawData = data.rest();
     data.next(rawData.length);
     const innerDoc = rawData.split("\n").map(l => {
@@ -183,7 +194,7 @@ function parseQuote(data: Peek): Node {
         }
         return l.substring(2)
     }).join("\n");
-    const inners = splitBlock(innerDoc).map(parseRootBlock);
+    const inners = splitBlock(innerDoc).filter(b => b.trim() !== "").map(b => parseRootBlock(b, opt));
     return {
         type: "quote",
         data: null,
@@ -193,14 +204,14 @@ function parseQuote(data: Peek): Node {
     };
 }
 
-function parsePara(data: Peek): Node {
+function parsePara(data: Peek, opt: PtmParseOpt): Node {
     const rawData = data.rest();
     return {
         type: "para",
         data: null,
         macros: [],
         rawData,
-        children: parseInlineBlocks(data)
+        children: parseInlineBlocks(data, null, opt)
     };
 }
 
@@ -221,7 +232,7 @@ function parseBreak(data: Peek): Node {
     }
 }
 
-function parseList(data: Peek): Node {
+function parseList(data: Peek, opt: PtmParseOpt): Node {
     const rawData = data.rest();
     const listIdf = data.peek(0, 2);
     if (!Regexs.listIdf.test(listIdf)) {
@@ -236,12 +247,12 @@ function parseList(data: Peek): Node {
             return;
         }
         let children = []
-        children.push(...parseInlineBlocks(new Peek(item[0].substring(2))));
+        children.push(...parseInlineBlocks(new Peek(item[0].substring(2)), null, opt));
         if (item.length > 1) {
             children.push(parseRootBlock(
                 item.slice(1)
                     .map(l => l.substring(2))
-                    .join("\n")))
+                    .join("\n"), opt))
         }
         nodes.push({
             type: "listItem",
@@ -274,7 +285,7 @@ function parseList(data: Peek): Node {
     };
 }
 
-function parseTitle(data: Peek): Node {
+function parseTitle(data: Peek, opt: PtmParseOpt): Node {
     const rawData = data.rest();
     if (!Regexs.title.test(data.peek(0, 7))) {
         throw new InvalidSyntaxError("title", data, `${rawData} isn't match title`);
@@ -294,7 +305,7 @@ function parseTitle(data: Peek): Node {
         data: { level },
         rawData,
         macros: [],
-        children: parseInlineBlocks(data)
+        children: parseInlineBlocks(data, null, opt)
     }
 }
 
@@ -324,7 +335,7 @@ function parseFenceCode(data: Peek): Node {
     };
 }
 
-function parseTable(data: Peek): Node {
+function parseTable(data: Peek, opt: PtmParseOpt): Node {
     const rawData = data.rest();
     const lines = rawData.split("\n");
     const splitR = /(?<!\\)\|/g;
@@ -340,7 +351,7 @@ function parseTable(data: Peek): Node {
                 data: null,
                 rawData: h,
                 macros: [],
-                children: parseInlineBlocks(new Peek(h))
+                children: parseInlineBlocks(new Peek(h), null, opt)
             };
         })
     };
@@ -377,7 +388,7 @@ function parseTable(data: Peek): Node {
                     data: null,
                     rawData: f,
                     macros: [],
-                    children: parseInlineBlocks(new Peek(f))
+                    children: parseInlineBlocks(new Peek(f), null, opt)
                 };
             })
         };
@@ -392,7 +403,10 @@ function parseTable(data: Peek): Node {
     }
 }
 
-function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***" | "</span>"): Node[] {
+const isWhitespace = (ch: string) =>
+    ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f';
+
+function parseInlineBlocks(data: Peek, waitsign: "*" | "**" | "***" | string | null, opt: PtmParseOpt): Node[] {
     let nodes: Node[] = [];
     let textBuf: string[] = [];
     let rawData: string[] = [];
@@ -428,7 +442,7 @@ function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***" | "</span>"
         )) {
             pushText();
             return nodes;
-        } else if (waitsign === "</span>" && data.peek(0, 7) === "</span>") {
+        } else if (waitsign !== null && !waitsign.startsWith("*") && data.peek(0, waitsign.length) === waitsign) {
             pushText();
             return nodes;
         }
@@ -437,7 +451,7 @@ function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***" | "</span>"
             case "*": {
                 if (/^(\*{1,3}(?![ *]))/.test(data.peek(0, 4))) {
                     pushText();
-                    pushNode(parseEmphasisAndStrong(data));
+                    pushNode(parseEmphasisAndStrong(data, opt));
                 } else {
                     textBuf.push("*");
                     rawData.push("*");
@@ -490,14 +504,32 @@ function parseInlineBlocks(data: Peek, waitsign?: "*" | "**" | "***" | "</span>"
                 if (data.peek(0, 4) === "<!M ") {
                     pushText();
                     lastMacro = parseMacroCall(data);
-                } else if (data.peek(0, 5) === "<span") {
-                    data.next(5);
-                    pushText();
-                    pushNode(parseSpan(data));
                 } else {
-                    textBuf.push("<");
-                    rawData.push("<");
-                    data.next();
+                    let matchTag = false;
+                    for (const tag of opt.allowedHtmlTags) {
+                        const prefix = `<${tag}`;
+                        const prefixLen = prefix.length;
+
+                        // 1. 检查前缀是否匹配
+                        if (data.peek(0, prefixLen) !== prefix) continue;
+
+                        // 2. 检查 prefix 后的字符是否为 whitespace 或 '>'
+                        const nextChar = data.peek(prefixLen, 1);
+                        if (nextChar === '' || nextChar === '>' || isWhitespace(nextChar)) {
+                            // 匹配成功
+                            data.next(prefixLen);
+                            pushText();
+                            pushNode(parseHtmlTag(data, tag, opt)); // 将具体 tag 传入
+                            matchTag = true;
+                            break; // 找到匹配，跳出循环
+                        }
+                    }
+
+                    if (!matchTag) {
+                        textBuf.push("<");
+                        rawData.push("<");
+                        data.next();
+                    }
                 }
                 break;
             }
@@ -554,7 +586,7 @@ function parseMacroCall(data: Peek): MacroCall[] {
     }
 }
 
-function parseEmphasisAndStrong(data: Peek): Node {
+function parseEmphasisAndStrong(data: Peek, opt: PtmParseOpt): Node {
     const cap = /^(\*{1,3}(?![ *]))/.exec(data.peek(0, 4));
     let starcnt = 0;
     let starstr;
@@ -566,7 +598,7 @@ function parseEmphasisAndStrong(data: Peek): Node {
         throw new InvalidSyntaxError("emphasis", data);
     }
     let nodes: Node[] = [];
-    nodes.push(...parseInlineBlocks(data, starstr as "*" | "**" | "***"));
+    nodes.push(...parseInlineBlocks(data, starstr as "*" | "**" | "***", opt));
     const cap2 = /^\*{1,2}/.exec(data.peek(0, 2));
     if (cap2) {
         const needstarcnt = Math.min(starcnt, cap2[0].length);
@@ -589,7 +621,7 @@ function parseEmphasisAndStrong(data: Peek): Node {
                 children: nodes,
                 rawData: "**" + nodes.map(n => n.rawData).join("") + "**"
             };
-            const rnode = parseInlineBlocks(data, "*");
+            const rnode = parseInlineBlocks(data, "*", opt);
             data.next(1);
             return {
                 type: "emphasis",
@@ -606,7 +638,7 @@ function parseEmphasisAndStrong(data: Peek): Node {
                 children: nodes,
                 rawData: "*" + nodes.map(n => n.rawData).join("") + "*"
             };
-            const rnode = parseInlineBlocks(data, "**");
+            const rnode = parseInlineBlocks(data, "**", opt);
             data.next(2);
             return {
                 type: "strong",
@@ -636,14 +668,14 @@ function trimAny(str: string, chars: string[]) {
     return (start > 0 || end < str.length) ? str.substring(start, end) : str;
 }
 
-function parseSpan(data: Peek): Node {
+function parseHtmlTag(data: Peek, tag: string, opt: PtmParseOpt): Node {
     let attrstr: string[] = [];
     while (!data.end() && data.peek() !== ">") {
         attrstr.push(data.peek());
         data.next();
     }
     if (data.end() || data.peek() !== ">") {
-        throw new InvalidSyntaxError("htmlTag", data, "span not closed");
+        throw new InvalidSyntaxError("htmlTag", data, `${tag} not closed`);
     }
     data.next();
     const attrs = attrstr.join("").trim().split(" ");
@@ -652,17 +684,18 @@ function parseSpan(data: Peek): Node {
         .map((attr) => attr.split("="))
         .filter((kv) => kv.length === 2)
         .map(([key, val]) => ({ key, val: trimAny(val, ["\"", "'"]) }));
-    const nodes = parseInlineBlocks(data, "</span>");
-    data.next(7);
+    const closesign = `</${tag}>`
+    const nodes = parseInlineBlocks(data, closesign, opt);
+    data.next(closesign.length);
     return {
         type: "htmlTag",
         data: {
-            tag: "span",
+            tag,
             attr: attrlist,
         },
         macros: [],
         children: nodes,
-        rawData: "<span" + attrstr.join() + ">" + nodes.map(n => n.rawData).join("") + "</span>"
+        rawData: `<${tag} ${attrstr.join()}>${nodes.map(n => n.rawData).join("")}</${tag}>`
     };
 }
 
@@ -731,4 +764,4 @@ function parseImage(data: Peek): Node {
     };
 }
 
-export { parseSingle, parseFull, Peek };
+export { parseSingle, parseFull, Peek, PtmParseOpt, DEFAULT_PTM_PARSE_OPT };
